@@ -55,7 +55,7 @@ void NFDeEsserLookAndFeel::drawRotarySlider(juce::Graphics& g,int x,int y,int w,
 // The vertical faders (component id "fader"): the thumb travel margin scales with the component so the scale marks drawn by the editor line up.
 int NFDeEsserLookAndFeel::getSliderThumbRadius(juce::Slider& slider)
 {
-    if (slider.getComponentID() == "fader") return juce::roundToInt((float) slider.getWidth() * 0.12f);
+    if (slider.getComponentID() == "fader") return juce::roundToInt((float) slider.getWidth() * 0.24f);
     return juce::LookAndFeel_V4::getSliderThumbRadius(slider);
 }
 
@@ -70,8 +70,8 @@ void NFDeEsserLookAndFeel::drawLinearSlider(juce::Graphics& g,int x,int y,int wi
     juce::Graphics::ScopedSaveState state(g);
     const float s = (float)width / 56.0f;   // the component is 56 base units wide
     const float centreX = (float)x + (float)width*0.5f;
-    const float trackTop = (float)y + 3.0f*s;
-    const float trackBottom = (float)y + (float)height - 3.0f*s;
+    const float trackTop = (float)y + 10.0f*s;
+    const float trackBottom = (float)y + (float)height - 10.0f*s;
 
     // Groove: matte black, rounded, with a soft shadow.
     g.setColour(juce::Colour(0x55000000));
@@ -81,17 +81,27 @@ void NFDeEsserLookAndFeel::drawLinearSlider(juce::Graphics& g,int x,int y,int wi
     g.setColour(juce::Colour(0xff2a302b));
     g.drawRoundedRectangle(centreX-3.5f*s, trackTop, 7.0f*s, trackBottom-trackTop, 3.5f*s, 0.8f*s);
 
-    // Thumb: cream-white like the knobs, black centre line, thin dark outline.
-    juce::Rectangle<float> thumb(centreX-17.0f*s, sliderPos-7.0f*s, 34.0f*s, 14.0f*s);
-    g.setColour(juce::Colour(0x60000000));
-    g.fillRoundedRectangle(thumb.translated(0.0f,2.5f*s), 4.0f*s);
-    g.setGradientFill(juce::ColourGradient(juce::Colour(0xfffaf8f0), thumb.getCentreX(), thumb.getY(),
-                                           juce::Colour(0xffd3d0c2), thumb.getCentreX(), thumb.getBottom(), false));
-    g.fillRoundedRectangle(thumb, 4.0f*s);
+    // Thumb: console-style fader cap, cream-white like the knobs, with grip ridges and a black centre line.
+    juce::Rectangle<float> thumb(centreX-23.0f*s, sliderPos-13.0f*s, 46.0f*s, 26.0f*s);
+    g.setColour(juce::Colour(0x70000000));
+    g.fillRoundedRectangle(thumb.translated(0.0f,3.5f*s), 5.0f*s);
+    g.setGradientFill(juce::ColourGradient(juce::Colour(0xfffcfaf3), thumb.getCentreX(), thumb.getY(),
+                                           juce::Colour(0xffcfccbd), thumb.getCentreX(), thumb.getBottom(), false));
+    g.fillRoundedRectangle(thumb, 5.0f*s);
+    g.setColour(juce::Colours::white.withAlpha(0.55f));                       // soft highlight on the upper edge
+    g.fillRoundedRectangle(thumb.reduced(2.0f*s).removeFromTop(5.0f*s), 2.5f*s);
     g.setColour(juce::Colour(0xff111511));
-    g.drawRoundedRectangle(thumb, 4.0f*s, 1.3f*s);
-    g.setColour(juce::Colour(0xff0a0a0a));
-    g.fillRoundedRectangle(thumb.getX()+4.0f*s, thumb.getCentreY()-1.1f*s, thumb.getWidth()-8.0f*s, 2.2f*s, 1.1f*s);
+    g.drawRoundedRectangle(thumb, 5.0f*s, 1.5f*s);
+    // grip ridges above and below the centre line
+    for (float dy : { -8.5f, -5.5f, 5.5f, 8.5f })
+    {
+        g.setColour(juce::Colour(0x55000000));
+        g.fillRect(thumb.getX()+6.0f*s, thumb.getCentreY()+dy*s-0.6f*s, thumb.getWidth()-12.0f*s, 1.2f*s);
+        g.setColour(juce::Colours::white.withAlpha(0.6f));
+        g.fillRect(thumb.getX()+6.0f*s, thumb.getCentreY()+dy*s+0.6f*s, thumb.getWidth()-12.0f*s, 0.8f*s);
+    }
+    g.setColour(juce::Colour(0xff0a0a0a));                                     // centre line (the value mark)
+    g.fillRoundedRectangle(thumb.getX()+4.0f*s, thumb.getCentreY()-1.6f*s, thumb.getWidth()-8.0f*s, 3.2f*s, 1.6f*s);
 }
 
 void NFDeEsserLookAndFeel::drawScrew(juce::Graphics& g, juce::Rectangle<float> bounds)
