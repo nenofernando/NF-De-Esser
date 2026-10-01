@@ -13,7 +13,7 @@ juce::Image readyAsset(const char* data, int size) { return juce::ImageCache::ge
 constexpr float kKnobY = 180.0f;
 // Four knobs evenly spaced (250 apart); the vertical reduction meter sits under the Power button (same centre X).
 constexpr float kFreqX = 190.0f, kThresholdX = 440.0f, kRangeX = 690.0f, kOutputX = 940.0f, kMeterX = 1108.0f;
-constexpr float kKnobBox = 145.0f;
+constexpr float kFaderW = 56.0f, kFaderY = 76.0f, kFaderH = 176.0f;   // vertical fader box (base units)
 
 juce::String formatOut(double v){ auto s=juce::String(v,1); if(v>0.05) s="+"+s; else if(v>-0.05) s="0.0"; return s+" dB"; }
 juce::String formatDb(double v){ return juce::String(juce::roundToInt(v))+" dB"; }
@@ -58,10 +58,11 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     struct K{ juce::Slider* s; double def; };
     for(auto k:{K{&freqKnob,6500.0},K{&thresholdKnob,-20.0},K{&rangeKnob,8.0},K{&outputKnob,0.0}}){
         addAndMakeVisible(*k.s);
-        k.s->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        // Same 270-degree sweep as the tick marks drawn in drawScale().
-        k.s->setRotaryParameters(juce::MathConstants<float>::pi*1.25f, juce::MathConstants<float>::pi*2.75f, true);
+        k.s->setComponentID("fader");
+        k.s->setSliderStyle(juce::Slider::LinearVertical);   // vertical faders (like the de-essers people know), same controls
         k.s->setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);
+        k.s->setSliderSnapsToMousePosition(true);
+        k.s->setScrollWheelEnabled(true);
         k.s->setDoubleClickReturnValue(true,k.def);
     }
     for(auto* c:{&freqCap,&thresholdCap,&rangeCap,&outputCap}) addAndMakeVisible(*c);
@@ -201,6 +202,24 @@ void NFDeEsserAudioProcessorEditor::drawScale(juce::Graphics& g,juce::Point<floa
     }
 }
 
+// Marks on both sides of a vertical fader, numbers on the left. Positions come from the slider itself so they always line up with the thumb.
+void NFDeEsserAudioProcessorEditor::drawFaderScale(juce::Graphics& g,juce::Slider& fader,float cx,const std::vector<FaderTick>& ticks)
+{
+    g.setColour(juce::Colours::white);
+    for (const auto& t : ticks)
+    {
+        const float y = ((float) fader.getY() + (float) fader.getPositionOfValue(t.value) - offsetY) / layoutScale;
+        const float len = t.major ? 9.0f : 5.0f, th = t.major ? 2.0f : 1.2f;
+        g.drawLine(cx - 24.0f - len, y, cx - 24.0f, y, th);
+        g.drawLine(cx + 24.0f, y, cx + 24.0f + len, y, th);
+        if (t.label.isNotEmpty())
+        {
+            g.setFont(juce::Font(juce::FontOptions(14.0f)));
+            g.drawText(t.label, juce::Rectangle<float>(cx - 24.0f - len - 46.0f, y - 9.0f, 42.0f, 18.0f), juce::Justification::centredRight);
+        }
+    }
+}
+
 void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colour(0xff0a1b11));
@@ -229,10 +248,10 @@ void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
         std::vector<Tick> t; for(int i=0;i<=12;++i) t.push_back({-135.0f+i*22.5f, {}, i%3==0, 14.0f});
         t[0].label=lo; t[6].label=mid; t[12].label=hi; t[6].fontSize=16.0f; return t;
     };
-    drawScale(g,{kFreqX,kKnobY},continuous("2k","5k","12k"));
-    drawScale(g,{kThresholdX,kKnobY},continuous("-40","-20","0"));
-    drawScale(g,{kRangeX,kKnobY},continuous("0","10","20"));
-    drawScale(g,{kOutputX,kKnobY},continuous("-12","0","+12"));
+    drawFaderScale(g,freqKnob,kFreqX,{{2000,"2k",true},{3000,"3k",true},{4000,{},false},{5000,"5k",true},{6000,{},false},{8000,"8k",true},{10000,{},false},{12000,"12k",true}});
+    {   std::vector<FaderTick> t; for(int v=-40; v<=0; v+=5) t.push_back({(double)v, v%10==0 ? juce::String(v) : juce::String(), v%10==0}); drawFaderScale(g,thresholdKnob,kThresholdX,t); }
+    {   std::vector<FaderTick> t; for(double v=0; v<=20.001; v+=2.5) { const bool maj = std::fmod(v,5.0) < 0.01; t.push_back({v, maj ? juce::String((int)v) : juce::String(), maj}); } drawFaderScale(g,rangeKnob,kRangeX,t); }
+    {   std::vector<FaderTick> t; for(int v=-12; v<=12; v+=3) { const bool maj = v%6==0; t.push_back({(double)v, maj ? (v>0?"+"+juce::String(v):juce::String(v)) : juce::String(), maj}); } drawFaderScale(g,outputKnob,kOutputX,t); }
 
     g.setColour(juce::Colours::white);g.setFont(juce::Font(juce::FontOptions(20.0f,juce::Font::bold)));
     const std::pair<float,const char*> names[]={{kFreqX,"FREQUENCY"},{kThresholdX,"THRESHOLD"},{kRangeX,"RANGE"},{kOutputX,"OUTPUT"}};
@@ -274,7 +293,7 @@ void NFDeEsserAudioProcessorEditor::resized()
 
     auto layoutBand = [&](juce::Slider& knob, ValueCapsule& cap, float cx)
     {
-        knob.setBounds(scaleBounds({cx-kKnobBox*0.5f, kKnobY-kKnobBox*0.5f, kKnobBox, kKnobBox}));
+        knob.setBounds(scaleBounds({cx-kFaderW*0.5f, kFaderY, kFaderW, kFaderH}));
         cap.setBounds(scaleBounds({cx-65.0f, 294.0f, 130.0f, 54.0f}));
     };
     layoutBand(freqKnob,freqCap,kFreqX);layoutBand(thresholdKnob,thresholdCap,kThresholdX);
@@ -284,11 +303,11 @@ void NFDeEsserAudioProcessorEditor::resized()
     power.setBounds(scaleBounds({1075.0f, 43.0f, 66.0f, 66.0f}));
     // Bar (27px into the 80px box) is centred on the Power button's X.
     grMeter.setBounds(scaleBounds({kMeterX-27.0f, 106.0f, 80.0f, 154.0f}));
-    outputBubble.setBounds(scaleBounds({kOutputX-38.0f, 202.0f, 76.0f, 24.0f}));
+    outputBubble.setBounds(scaleBounds({kOutputX+44.0f, 150.0f, 76.0f, 24.0f}));
     logoButton.setBounds(scaleBounds({42.0f, 3.0f, 108.0f, 62.0f}));
-    freqBubble.setBounds(scaleBounds({kFreqX-38.0f, 202.0f, 76.0f, 24.0f}));
-    thresholdBubble.setBounds(scaleBounds({kThresholdX-38.0f, 202.0f, 76.0f, 24.0f}));
-    rangeBubble.setBounds(scaleBounds({kRangeX-38.0f, 202.0f, 76.0f, 24.0f}));
+    freqBubble.setBounds(scaleBounds({kFreqX+44.0f, 150.0f, 76.0f, 24.0f}));
+    thresholdBubble.setBounds(scaleBounds({kThresholdX+44.0f, 150.0f, 76.0f, 24.0f}));
+    rangeBubble.setBounds(scaleBounds({kRangeX+44.0f, 150.0f, 76.0f, 24.0f}));
     menuButton.setBounds(scaleBounds({1020.0f, 25.0f, 34.0f, 28.0f}));
     presetBar.setBounds(scaleBounds({848.0f, 28.0f, 157.0f, 21.0f}));
 }

@@ -7,6 +7,7 @@ public:
     NFDeEsserLookAndFeel();
     void drawRotarySlider(juce::Graphics&,int,int,int,int,float,float,float,juce::Slider&) override;
     void drawLinearSlider(juce::Graphics&,int,int,int,int,float,float,float,juce::Slider::SliderStyle,juce::Slider&) override;
+    int getSliderThumbRadius(juce::Slider&) override;
     juce::Label* createSliderTextBox(juce::Slider&) override;
     void drawButtonBackground(juce::Graphics&,juce::Button&,const juce::Colour&,bool,bool) override;
 

@@ -194,6 +194,8 @@ public:
 private:
     struct Tick { float deg; juce::String label; bool major; float fontSize; float labelOffset = 29.0f; };
     void drawScale(juce::Graphics&,juce::Point<float> centre,const std::vector<Tick>&);
+    struct FaderTick { double value; juce::String label; bool major; };
+    void drawFaderScale(juce::Graphics&,juce::Slider&,float centreX,const std::vector<FaderTick>&);
     juce::Rectangle<int> scaleBounds(juce::Rectangle<float> baseBounds) const;
     // the preset name lives in the plug-in state; refresh the tab whenever it changes (may come from a non-message thread)
     void valueTreePropertyChanged(juce::ValueTree&, const juce::Identifier& id) override { if (id.toString() == "presetName") triggerAsyncUpdate(); }

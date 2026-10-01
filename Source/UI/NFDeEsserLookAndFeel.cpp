@@ -52,48 +52,46 @@ void NFDeEsserLookAndFeel::drawRotarySlider(juce::Graphics& g,int x,int y,int w,
     }
 }
 
+// The vertical faders (component id "fader"): the thumb travel margin scales with the component so the scale marks drawn by the editor line up.
+int NFDeEsserLookAndFeel::getSliderThumbRadius(juce::Slider& slider)
+{
+    if (slider.getComponentID() == "fader") return juce::roundToInt((float) slider.getWidth() * 0.12f);
+    return juce::LookAndFeel_V4::getSliderThumbRadius(slider);
+}
+
 void NFDeEsserLookAndFeel::drawLinearSlider(juce::Graphics& g,int x,int y,int width,int height,float sliderPos,float,float,juce::Slider::SliderStyle style,juce::Slider& slider)
 {
-    if (slider.getComponentID() != "outputSlider" || style != juce::Slider::LinearVertical)
+    if (slider.getComponentID() != "fader" || style != juce::Slider::LinearVertical)
     {
         juce::LookAndFeel_V4::drawLinearSlider(g,x,y,width,height,sliderPos,0.0f,0.0f,style,slider);
         return;
     }
 
     juce::Graphics::ScopedSaveState state(g);
-
-    // This component's own bounds already carry the current uiScale (set via
-    // PluginEditor::scaleBounds from the 50x110 base box), so a local factor derived
-    // from the actual width keeps every hand-drawn dimension below proportionally
-    // correct at any window size, exactly like the knob indicator does.
-    const float s = (float)width / 50.0f;
-
+    const float s = (float)width / 56.0f;   // the component is 56 base units wide
     const float centreX = (float)x + (float)width*0.5f;
-    const float trackTop = (float)y + 5.0f*s;
-    const float trackBottom = (float)y + (float)height - 5.0f*s;
+    const float trackTop = (float)y + 3.0f*s;
+    const float trackBottom = (float)y + (float)height - 3.0f*s;
 
-    // Track: matte black, rounded, with a subtle inner shadow -- no colour, no numbers.
-    g.setColour(juce::Colour(0x50000000));
-    g.fillRoundedRectangle(centreX-3.0f*s, trackTop+2.0f*s, 6.0f*s, trackBottom-trackTop, 3.0f*s);
-    g.setColour(juce::Colour(0xff101311));
-    g.fillRoundedRectangle(centreX-2.0f*s, trackTop, 4.0f*s, trackBottom-trackTop, 2.0f*s);
+    // Groove: matte black, rounded, with a soft shadow.
+    g.setColour(juce::Colour(0x55000000));
+    g.fillRoundedRectangle(centreX-4.5f*s, trackTop+2.0f*s, 9.0f*s, trackBottom-trackTop, 4.5f*s);
+    g.setColour(juce::Colour(0xff0d110e));
+    g.fillRoundedRectangle(centreX-3.5f*s, trackTop, 7.0f*s, trackBottom-trackTop, 3.5f*s);
+    g.setColour(juce::Colour(0xff2a302b));
+    g.drawRoundedRectangle(centreX-3.5f*s, trackTop, 7.0f*s, trackBottom-trackTop, 3.5f*s, 0.8f*s);
 
-    // Thumb: horizontal, black-metal, thin silver outline, discreet relief.
-    juce::Rectangle<float> thumb(centreX-12.0f*s, sliderPos-4.0f*s, 24.0f*s, 8.0f*s);
-    g.setColour(juce::Colour(0x50000000));
-    g.fillRoundedRectangle(thumb.translated(0.0f,2.0f*s), 2.0f*s);
-    juce::ColourGradient thumbGradient(juce::Colour(0xff343735), thumb.getCentreX(), thumb.getY(),
-                                         juce::Colour(0xff0b0d0c), thumb.getCentreX(), thumb.getBottom(), false);
-    g.setGradientFill(thumbGradient);
-    g.fillRoundedRectangle(thumb, 2.0f*s);
-
-    // Soft whitish sheen across the upper portion, like a brushed-metal highlight.
-    auto sheen = thumb.reduced(1.2f*s).removeFromTop(thumb.getHeight()*0.4f);
-    g.setColour(juce::Colours::white.withAlpha(0.28f));
-    g.fillRoundedRectangle(sheen, 1.4f*s);
-
-    g.setColour(juce::Colour(0xff777b78));
-    g.drawRoundedRectangle(thumb, 2.0f*s, 0.8f*s);
+    // Thumb: cream-white like the knobs, black centre line, thin dark outline.
+    juce::Rectangle<float> thumb(centreX-17.0f*s, sliderPos-7.0f*s, 34.0f*s, 14.0f*s);
+    g.setColour(juce::Colour(0x60000000));
+    g.fillRoundedRectangle(thumb.translated(0.0f,2.5f*s), 4.0f*s);
+    g.setGradientFill(juce::ColourGradient(juce::Colour(0xfffaf8f0), thumb.getCentreX(), thumb.getY(),
+                                           juce::Colour(0xffd3d0c2), thumb.getCentreX(), thumb.getBottom(), false));
+    g.fillRoundedRectangle(thumb, 4.0f*s);
+    g.setColour(juce::Colour(0xff111511));
+    g.drawRoundedRectangle(thumb, 4.0f*s, 1.3f*s);
+    g.setColour(juce::Colour(0xff0a0a0a));
+    g.fillRoundedRectangle(thumb.getX()+4.0f*s, thumb.getCentreY()-1.1f*s, thumb.getWidth()-8.0f*s, 2.2f*s, 1.1f*s);
 }
 
 void NFDeEsserLookAndFeel::drawScrew(juce::Graphics& g, juce::Rectangle<float> bounds)

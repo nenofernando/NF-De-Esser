@@ -2,7 +2,7 @@
 
 Simple split-band de-esser by **NF Audio Tools** (Nenno Fernando) for vocals, drums and mixes. VST3, AU (macOS) and AAX (Pro Tools).
 
-Controls: **Frequency** (2-12 kHz: where the sibilance lives), **Threshold** (-40..0 dB), **Range** (0..20 dB: the most it will ever turn the
+Four vertical faders (like the classic de-essers): **Frequency** (2-12 kHz: where the sibilance lives), **Threshold** (-40..0 dB), **Range** (0..20 dB: the most it will ever turn the
 band down), **Output** (-12..+12 dB), a **Listen** button (plays only the band the de-esser hears, to find the "s"), a **Reduction** meter,
 Power and 11 factory presets (male / female / rock / pop / podcast / heavy voice, acoustic guitar, hi-hat, overheads, mix bus, master) plus save/load.
 
