@@ -5,6 +5,7 @@ Simple split-band de-esser by **NF Audio Tools** (Nenno Fernando) for vocals, dr
 Built like the classic de-essers (Waves DeEsser, Avid De-Esser III), in the NF look with a **black brushed-steel** chassis (the owner's choice for this plug-in).
 - **MODE:** **TARGET** (Split: the audio is split at Frequency and only the HIGH part is turned down, the low part is never touched) or **FULL** (the whole signal is turned down).
 - **SIDE-CHAIN:** **HIGH** (default: the detector looks at everything above Frequency, good for voices with several kinds of "s") or **BAND** (a narrow band around Frequency, isolates one kind of "s").
+- **SOURCE:** **VOICE** (default: only reduces where the highs stand out from the body of the voice) or **INSTR** (plain level-based detection, for guitar, hi-hats, overheads and buses). The factory presets pick it for you.
 - **RANGE** (0..20 dB: the most it will ever turn down) and **FREQUENCY** (500 Hz - 16 kHz): round knobs with a value box.
 - **MONITOR:** **AUDIO** or **LISTEN**, the side-chain monitor: it always plays what the side-chain hears (to find the "s"), whatever the Threshold is.
 - **THRESHOLD** (-40..0 dB) is the only fader, with an input meter beside it (the energy of the side-chain, same scale); then the **REDUCTION** meter and L / R output level meters.
