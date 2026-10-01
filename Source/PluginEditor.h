@@ -4,6 +4,7 @@
 #include "UI/NFDeEsserLookAndFeel.h"
 #include "UI/ValueCapsule.h"
 #include "PresetManager.h"
+#include "License/LicenseActivationComponent.h"
 
 // Reduction meter: vertical LED ladder that hangs from the top (0 dB) down to 20 dB, scale on its right.
 class NFDeEsserGainReductionMeter final:public juce::Component, private juce::Timer
@@ -266,6 +267,7 @@ private:
     ValueCapsule freqCap,thresholdCap,rangeCap;
     NFDeEsserPowerButton power;
     NFDeEsserToggleButton modeBtn{"TARGET"}, scBtn{"HIGH"}, voiceBtn{"VOICE"}, audioBtn{"AUDIO"}, listenBtn{"LISTEN"};
+    LicenseActivationComponent licenseOverlay;
     using SA=juce::AudioProcessorValueTreeState::SliderAttachment;
     std::unique_ptr<SA> thresholdA,freqA,rangeA,freqCapA,thresholdCapA,rangeCapA;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> powerA,listenA,wideA,scA,voiceA;

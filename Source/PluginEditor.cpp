@@ -32,7 +32,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     :AudioProcessorEditor(&p),processor(p),grMeter(p.gainReductionDb),
      inputMeter(p.detectorLevelDb,-40.0f,0.0f,24),outLMeter(p.outputLevelDb[0],-30.0f,0.0f,20),outRMeter(p.outputLevelDb[1],-30.0f,0.0f,20),
      freqCap("0.5-16 kHz",6500.0,false,formatFreq),thresholdCap("-40 to 0 dB",-20.0,true,formatDb),
-     rangeCap("0 to 20 dB",12.0,false,formatRange)
+     rangeCap("0 to 20 dB",12.0,false,formatRange),licenseOverlay(p.licenseManager)
 {
     setLookAndFeel(&look);
     setResizable(true,true);
@@ -98,6 +98,11 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     modeBtn.onStateChange=[this]{ updateMonitorButtons(); };
     scBtn.onStateChange=[this]{ updateMonitorButtons(); };
     updateMonitorButtons();
+
+    addChildComponent(licenseOverlay);
+    licenseOverlay.setVisible(!processor.licenseManager.isActivated());
+    licenseOverlay.onActivated=[this]{licenseOverlay.setVisible(false);};
+    licenseOverlay.setLookAndFeel(&juce::LookAndFeel::getDefaultLookAndFeel());
 }
 void NFDeEsserAudioProcessorEditor::updateMonitorButtons()
 {
@@ -354,4 +359,5 @@ void NFDeEsserAudioProcessorEditor::resized()
     thresholdBubble.setBounds(scaleBounds({kThresholdX-38.0f, 84.0f, 76.0f, 24.0f}));
     menuButton.setBounds(scaleBounds({612.0f, 25.0f, 34.0f, 28.0f}));
     presetBar.setBounds(scaleBounds({439.0f, 28.0f, 157.0f, 21.0f}));
+    licenseOverlay.setBounds(getLocalBounds());
 }
