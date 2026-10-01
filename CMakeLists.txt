@@ -56,7 +56,7 @@ juce_add_plugin(NFDeEsser
 juce_generate_juce_header(NFDeEsser)
 
 # Artwork embedded as binary data (header NFDeEsserBinaryData.h).
-file(GLOB NFDeEsser_READY_ASSETS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Assets/PNG_READY_1200x400/*.png")
+file(GLOB NFDeEsser_READY_ASSETS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Assets/PNG_READY_1200x400/*.png" "${CMAKE_CURRENT_SOURCE_DIR}/Assets/PNG_READY_800x800/*.png")
 juce_add_binary_data(NFDeEsserAssets HEADER_NAME NFDeEsserBinaryData.h NAMESPACE NFDeEsserBinaryData SOURCES ${NFDeEsser_READY_ASSETS})
 target_sources(NFDeEsser PRIVATE
  Source/PluginProcessor.cpp Source/PluginProcessor.h Source/PluginEditor.cpp Source/PluginEditor.h

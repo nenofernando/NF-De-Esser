@@ -21,4 +21,4 @@ See `CLAUDE.md` for the rules (version, AAX SDK, signing).
 g++ -std=c++17 -Wall -Wextra Tests/DeEsserTests.cpp -o dsp_tests && ./dsp_tests
 ```
 
-Opens at 810 x 270 and remembers the size you choose with the resize handle; double-click the NF logo to go back to the default. A small preset tab (prev / name / next) sits at the top right; the 3-line button holds About.
+This plug-in is **square** (owner's design): it opens at 540 x 540 (resizable, always 1:1) and remembers the size you choose with the resize handle; double-click the NF logo to go back to 540 x 540. A small preset tab (prev / name / next) sits at the top right; the 3-line button holds About.

@@ -9,11 +9,11 @@ namespace
 {
 juce::Image readyAsset(const char* data, int size) { return juce::ImageCache::getFromMemory(data, size); }
 
-// Base layout (1200x400): knob centres and the shared knob row.
-constexpr float kKnobY = 180.0f;
-// Four knobs evenly spaced (250 apart); the vertical reduction meter sits under the Power button (same centre X).
-constexpr float kFreqX = 190.0f, kThresholdX = 440.0f, kRangeX = 690.0f, kOutputX = 940.0f, kMeterX = 1108.0f;
-constexpr float kFaderW = 56.0f, kFaderY = 76.0f, kFaderH = 176.0f;   // vertical fader box (base units)
+// Base layout: square, 800 x 800.
+// Square layout (800 x 800 base): four vertical faders evenly spaced (150 apart); the vertical reduction meter sits under the Power button (same centre X).
+constexpr float kFreqX = 120.0f, kThresholdX = 270.0f, kRangeX = 420.0f, kOutputX = 570.0f, kMeterX = 712.0f;
+constexpr int kDefaultSize = 540;   // 800 x 800 base shown at 0.675, the same text scale as the 810 x 270 plug-ins
+constexpr float kFaderW = 56.0f, kFaderY = 112.0f, kFaderH = 440.0f;   // vertical fader box (base units)
 
 juce::String formatOut(double v){ auto s=juce::String(v,1); if(v>0.05) s="+"+s; else if(v>-0.05) s="0.0"; return s+" dB"; }
 juce::String formatDb(double v){ return juce::String(juce::roundToInt(v))+" dB"; }
@@ -33,16 +33,16 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
 {
     setLookAndFeel(&look);
     setResizable(true,true);
-    getConstrainer()->setFixedAspectRatio(3.0);
-    getConstrainer()->setSizeLimits(750,250,1800,600);
+    getConstrainer()->setFixedAspectRatio(1.0);   // square plug-in
+    getConstrainer()->setSizeLimits(405,405,1200,1200);
     {
-        const int w = juce::jlimit(750, 1800, (int) p.apvts.state.getProperty("uiWidth", 810));   // size chosen with the resize handle survives close / reopen
-        setSize(w, w/3);
+        const int w = juce::jlimit(405, 1200, (int) p.apvts.state.getProperty("uiWidth", kDefaultSize));   // size chosen with the resize handle survives close / reopen
+        setSize(w, w);
     }
 
     addAndMakeVisible(logoButton);
     logoButton.setTooltip("Double-click: reset UI size");
-    logoButton.onDoubleClick = [this]{ setSize(810,270); };
+    logoButton.onDoubleClick = [this]{ setSize(kDefaultSize,kDefaultSize); };
 
     addAndMakeVisible(menuButton);
     menuButton.setTooltip("About");
@@ -226,11 +226,11 @@ void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
     juce::Graphics::ScopedSaveState state(g);
     g.addTransform(juce::AffineTransform::scale(layoutScale).translated(offsetX, offsetY));
 
-    static const juce::Image chassis = readyAsset(NFDeEsserBinaryData::_01_chassis_1200x400_png, NFDeEsserBinaryData::_01_chassis_1200x400_pngSize);
+    static const juce::Image chassis = readyAsset(NFDeEsserBinaryData::_01_chassis_800x800_png, NFDeEsserBinaryData::_01_chassis_800x800_pngSize);
     {
         juce::Graphics::ScopedSaveState s(g);
         g.setOpacity(1.0f);
-        if (chassis.isValid()) g.drawImage(chassis, {0.0f,0.0f,1200.0f,400.0f}, juce::RectanglePlacement::stretchToFit);
+        if (chassis.isValid()) g.drawImage(chassis, {0.0f,0.0f,800.0f,800.0f}, juce::RectanglePlacement::stretchToFit);
     }
 
     g.setColour(juce::Colour(0xffeef2ee));
@@ -248,37 +248,37 @@ void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
         std::vector<Tick> t; for(int i=0;i<=12;++i) t.push_back({-135.0f+i*22.5f, {}, i%3==0, 14.0f});
         t[0].label=lo; t[6].label=mid; t[12].label=hi; t[6].fontSize=16.0f; return t;
     };
-    drawFaderScale(g,freqKnob,kFreqX,{{2000,"2k",true},{3000,"3k",true},{4000,{},false},{5000,"5k",true},{6000,{},false},{8000,"8k",true},{10000,{},false},{12000,"12k",true}});
+    drawFaderScale(g,freqKnob,kFreqX,{{2000,"2k",true},{3000,"3k",true},{4000,"4k",true},{5000,"5k",true},{6000,"6k",true},{8000,"8k",true},{10000,"10k",true},{12000,"12k",true}});
     {   std::vector<FaderTick> t; for(int v=-40; v<=0; v+=5) t.push_back({(double)v, v%10==0 ? juce::String(v) : juce::String(), v%10==0}); drawFaderScale(g,thresholdKnob,kThresholdX,t); }
     {   std::vector<FaderTick> t; for(double v=0; v<=20.001; v+=2.5) { const bool maj = std::fmod(v,5.0) < 0.01; t.push_back({v, maj ? juce::String((int)v) : juce::String(), maj}); } drawFaderScale(g,rangeKnob,kRangeX,t); }
     {   std::vector<FaderTick> t; for(int v=-12; v<=12; v+=3) { const bool maj = v%6==0; t.push_back({(double)v, maj ? (v>0?"+"+juce::String(v):juce::String(v)) : juce::String(), maj}); } drawFaderScale(g,outputKnob,kOutputX,t); }
 
     g.setColour(juce::Colours::white);g.setFont(juce::Font(juce::FontOptions(20.0f,juce::Font::bold)));
     const std::pair<float,const char*> names[]={{kFreqX,"FREQUENCY"},{kThresholdX,"THRESHOLD"},{kRangeX,"RANGE"},{kOutputX,"OUTPUT"}};
-    for (auto& n : names) g.drawText(n.second, juce::Rectangle<int>((int)n.first-80,266,160,24), juce::Justification::centred);
+    for (auto& n : names) g.drawText(n.second, juce::Rectangle<int>((int)n.first-80,576,160,24), juce::Justification::centred);
     g.setFont(juce::Font(juce::FontOptions(15.0f,juce::Font::bold)));
-    g.drawText("REDUCTION", juce::Rectangle<int>((int)kMeterX-50,266,100,24), juce::Justification::centred);
+    g.drawText("REDUCTION", juce::Rectangle<int>((int)kMeterX-50,576,100,24), juce::Justification::centred);
 
-    NFDeEsserLookAndFeel::drawScrew(g, {7.0f,    14.0f, 46.0f, 46.0f});
-    NFDeEsserLookAndFeel::drawScrew(g, {1143.0f, 14.0f, 46.0f, 46.0f});
-    NFDeEsserLookAndFeel::drawScrew(g, {7.0f,    329.0f, 46.0f, 46.0f});
-    NFDeEsserLookAndFeel::drawScrew(g, {1143.0f, 329.0f, 46.0f, 46.0f});
+    NFDeEsserLookAndFeel::drawScrew(g, {7.0f,   14.0f, 46.0f, 46.0f});
+    NFDeEsserLookAndFeel::drawScrew(g, {747.0f, 14.0f, 46.0f, 46.0f});
+    NFDeEsserLookAndFeel::drawScrew(g, {7.0f,   729.0f, 46.0f, 46.0f});
+    NFDeEsserLookAndFeel::drawScrew(g, {747.0f, 729.0f, 46.0f, 46.0f});
     const bool powered = processor.apvts.getRawParameterValue("power")->load() > 0.5f;
-    NFDeEsserLookAndFeel::drawLed(g, {1095.0f, 24.0f, 20.0f, 20.0f}, powered);
+    NFDeEsserLookAndFeel::drawLed(g, {699.0f, 24.0f, 20.0f, 20.0f}, powered);
 
     // Footer signature, flanked by thin lines.
     g.setColour(juce::Colours::white);g.setFont(15.0f);
-    g.drawText("NF AUDIO TOOLS", juce::Rectangle<int>(0,358,1200,18), juce::Justification::centred);
+    g.drawText("NF AUDIO TOOLS", juce::Rectangle<int>(0,758,800,18), juce::Justification::centred);
     juce::GlyphArrangement footerGlyphs;
     footerGlyphs.addLineOfText(g.getCurrentFont(), "NF AUDIO TOOLS", 0.0f, 0.0f);
     const float footerTextWidth = footerGlyphs.getBoundingBox(0,-1,true).getWidth();
-    const float midX = 600.0f, lineY = 367.0f, gap = footerTextWidth*0.5f + 14.0f;
-    g.drawLine(midX-190.0f, lineY, midX-gap, lineY, 1.4f);
-    g.drawLine(midX+gap, lineY, midX+190.0f, lineY, 1.4f);
+    const float midX = 400.0f, lineY = 767.0f, gap = footerTextWidth*0.5f + 14.0f;
+    g.drawLine(midX-170.0f, lineY, midX-gap, lineY, 1.4f);
+    g.drawLine(midX+gap, lineY, midX+170.0f, lineY, 1.4f);
 
     // Version, bottom-left; derived from CMakeLists.txt's project(NFDeEsser VERSION ...).
     g.setFont(juce::Font(juce::FontOptions(12.5f)));
-    g.drawText("V" JucePlugin_VersionString, juce::Rectangle<int>(70,357,80,20), juce::Justification::centredLeft);
+    g.drawText("V" JucePlugin_VersionString, juce::Rectangle<int>(70,757,80,20), juce::Justification::centredLeft);
 
     g.setFont(juce::Font(juce::FontOptions(15.0f,juce::Font::bold)));
 }
@@ -286,28 +286,28 @@ void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
 void NFDeEsserAudioProcessorEditor::resized()
 {
     if (getWidth() > 0) processor.apvts.state.setProperty("uiWidth", getWidth(), nullptr);   // remembered for the next time the window opens
-    const float scaleX = getWidth()  / 1200.0f, scaleY = getHeight() / 400.0f;
+    const float scaleX = getWidth()  / 800.0f, scaleY = getHeight() / 800.0f;
     layoutScale = juce::jmin(scaleX, scaleY);
-    offsetX = (getWidth()  - 1200.0f * layoutScale) * 0.5f;
-    offsetY = (getHeight() - 400.0f  * layoutScale) * 0.5f;
+    offsetX = (getWidth()  - 800.0f * layoutScale) * 0.5f;
+    offsetY = (getHeight() - 800.0f  * layoutScale) * 0.5f;
 
     auto layoutBand = [&](juce::Slider& knob, ValueCapsule& cap, float cx)
     {
         knob.setBounds(scaleBounds({cx-kFaderW*0.5f, kFaderY, kFaderW, kFaderH}));
-        cap.setBounds(scaleBounds({cx-65.0f, 294.0f, 130.0f, 54.0f}));
+        cap.setBounds(scaleBounds({cx-65.0f, 608.0f, 130.0f, 54.0f}));
     };
     layoutBand(freqKnob,freqCap,kFreqX);layoutBand(thresholdKnob,thresholdCap,kThresholdX);
     layoutBand(rangeKnob,rangeCap,kRangeX);layoutBand(outputKnob,outputCap,kOutputX);
 
-    listenBtn.setBounds(scaleBounds({kFreqX+71.0f, 296.0f, 60.0f, 28.0f}));
-    power.setBounds(scaleBounds({1075.0f, 43.0f, 66.0f, 66.0f}));
+    listenBtn.setBounds(scaleBounds({kFreqX-30.0f, 676.0f, 60.0f, 28.0f}));
+    power.setBounds(scaleBounds({679.0f, 43.0f, 66.0f, 66.0f}));
     // Bar (27px into the 80px box) is centred on the Power button's X.
-    grMeter.setBounds(scaleBounds({kMeterX-27.0f, 106.0f, 80.0f, 154.0f}));
-    outputBubble.setBounds(scaleBounds({kOutputX+44.0f, 150.0f, 76.0f, 24.0f}));
+    grMeter.setBounds(scaleBounds({kMeterX-27.0f, 112.0f, 80.0f, 440.0f}));
+    outputBubble.setBounds(scaleBounds({kOutputX+44.0f, 300.0f, 76.0f, 24.0f}));
     logoButton.setBounds(scaleBounds({42.0f, 3.0f, 108.0f, 62.0f}));
-    freqBubble.setBounds(scaleBounds({kFreqX+44.0f, 150.0f, 76.0f, 24.0f}));
-    thresholdBubble.setBounds(scaleBounds({kThresholdX+44.0f, 150.0f, 76.0f, 24.0f}));
-    rangeBubble.setBounds(scaleBounds({kRangeX+44.0f, 150.0f, 76.0f, 24.0f}));
-    menuButton.setBounds(scaleBounds({1020.0f, 25.0f, 34.0f, 28.0f}));
-    presetBar.setBounds(scaleBounds({848.0f, 28.0f, 157.0f, 21.0f}));
+    freqBubble.setBounds(scaleBounds({kFreqX+44.0f, 300.0f, 76.0f, 24.0f}));
+    thresholdBubble.setBounds(scaleBounds({kThresholdX+44.0f, 300.0f, 76.0f, 24.0f}));
+    rangeBubble.setBounds(scaleBounds({kRangeX+44.0f, 300.0f, 76.0f, 24.0f}));
+    menuButton.setBounds(scaleBounds({612.0f, 25.0f, 34.0f, 28.0f}));
+    presetBar.setBounds(scaleBounds({439.0f, 28.0f, 157.0f, 21.0f}));
 }

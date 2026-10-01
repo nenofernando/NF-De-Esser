@@ -36,4 +36,4 @@ After a bump, grep for the old version to catch anything missed:
 - Parameters: `freq` 2-12 kHz (centre 5 kHz), `threshold`, `range`, `outputGain` -12..+12, `listen`, `power`.
 - No licence system yet (NF Q3 has one); decide before selling.
 
-- UI: default window 810 x 270 (same as every NF plug-in); the size chosen with the resize handle is stored in the plug-in state (`uiWidth`) and restored when the window is reopened; double-click on the NF logo returns to 810 x 270. Preset tab (prev / name / next) at the top right; the 3-line button holds About.
+- UI: NF De-Esser is the one SQUARE plug-in of the family (owner's design): 800 x 800 base layout, default window 540 x 540 (the same 0.675 text scale as the 810 x 270 plug-ins), aspect 1:1, limits 405..1200. Its chassis is `Assets/PNG_READY_800x800/01_chassis_800x800.png`, built from the family chassis texture. The size chosen with the resize handle is stored in the plug-in state (`uiWidth`) and restored when the window is reopened; double-click on the NF logo returns to 540 x 540. Preset tab (prev / name / next) at the top right; the 3-line button holds About.
