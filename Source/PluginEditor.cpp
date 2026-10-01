@@ -15,7 +15,8 @@ constexpr int kDefaultSize = 540;   // 800 x 800 base shown at 0.675, the same t
 constexpr float kThresholdX = 330.0f, kAttenX = 480.0f, kOutLX = 656.0f, kOutRX = 686.0f;
 constexpr float kFaderW = 56.0f, kFaderY = 112.0f, kFaderH = 500.0f;   // vertical fader box (base units)
 constexpr float kThumbMargin = 28.0f;                                    // fader thumb travel margin (half the cap height, 0.5 * width): the meters span the same range
-constexpr float kLeftX = 127.0f;                                         // centre of the left column
+constexpr float kLeftX = 137.0f;                                         // centre of the left column
+constexpr float kKnobBox = 96.0f, kFreqKnobY = 302.0f, kRangeKnobY = 502.0f;   // round knobs (base units)
 
 juce::String formatDb(double v){ return juce::String(juce::roundToInt(v))+" dB"; }
 juce::String formatRange(double v){ return juce::String(v,1)+" dB"; }
@@ -67,6 +68,13 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
         k.s->setScrollWheelEnabled(true);
         k.s->setDoubleClickReturnValue(true,k.def);
     }
+    for(auto k:{K{&freqKnob,6500.0},K{&rangeKnob,8.0}}){
+        addAndMakeVisible(*k.s);
+        k.s->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+        k.s->setRotaryParameters(juce::MathConstants<float>::pi*1.25f, juce::MathConstants<float>::pi*2.75f, true);   // 270-degree sweep, same as the family
+        k.s->setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);
+        k.s->setDoubleClickReturnValue(true,k.def);
+    }
     for(auto* c:{&freqCap,&thresholdCap,&rangeCap}) addAndMakeVisible(*c);
     addAndMakeVisible(power);power.setClickingTogglesState(true);
     for(auto* b:{&modeBtn,&listenBtn}) { addAndMakeVisible(*b); b->setClickingTogglesState(true); }
@@ -83,7 +91,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     thresholdKnob.onValueChange = [this]{ if (thresholdKnob.isMouseOverOrDragging()) thresholdBubble.showRaw(formatDb(thresholdKnob.getValue())); };
 
     auto& a=processor.apvts;
-    thresholdA=std::make_unique<SA>(a,"threshold",thresholdKnob);
+    thresholdA=std::make_unique<SA>(a,"threshold",thresholdKnob);freqA=std::make_unique<SA>(a,"freq",freqKnob);rangeA=std::make_unique<SA>(a,"range",rangeKnob);
     freqCapA=std::make_unique<SA>(a,"freq",freqCap.slider);thresholdCapA=std::make_unique<SA>(a,"threshold",thresholdCap.slider);rangeCapA=std::make_unique<SA>(a,"range",rangeCap.slider);
     powerA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"power",power);
     listenA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"listen",listenBtn);
@@ -195,6 +203,22 @@ void NFDeEsserAudioProcessorEditor::handleLoadPreset()
         });
 }
 
+// 270-degree tick ring around a round knob (13 ticks, major every 3rd), end labels at the lower corners.
+void NFDeEsserAudioProcessorEditor::drawKnobScale(juce::Graphics& g,juce::Point<float> c,float radius,const juce::String& lo,const juce::String& hi)
+{
+    g.setColour(juce::Colours::white);
+    for (int i = 0; i <= 12; ++i)
+    {
+        const float a = (-135.0f + (float) i * 22.5f) * juce::MathConstants<float>::pi / 180.0f;
+        const juce::Point<float> dir(std::sin(a), -std::cos(a));
+        const bool major = i % 3 == 0;
+        g.drawLine(juce::Line<float>(c + dir*radius, c + dir*(radius + (major ? 8.0f : 4.0f))), major ? 2.0f : 1.2f);
+    }
+    g.setFont(juce::Font(juce::FontOptions(12.5f)));
+    g.drawText(lo, juce::Rectangle<float>(c.x - radius - 30.0f, c.y + radius*0.72f, 40.0f, 18.0f), juce::Justification::centred);
+    g.drawText(hi, juce::Rectangle<float>(c.x + radius - 10.0f, c.y + radius*0.72f, 40.0f, 18.0f), juce::Justification::centred);
+}
+
 // Marks on both sides of a vertical fader, numbers on the left. Positions come from the slider itself so they always line up with the thumb.
 void NFDeEsserAudioProcessorEditor::drawFaderScale(juce::Graphics& g,juce::Slider& fader,float cx,const std::vector<FaderTick>& ticks)
 {
@@ -233,17 +257,19 @@ void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
     g.setFont(juce::Font(juce::FontOptions(30.0f,juce::Font::bold)).withExtraKerningFactor(.08f));
     g.drawText("NF DE-ESSER",168,9,230,44,juce::Justification::centredLeft);
 
-    // Left column: dark inset panel with four sections (AUDIO mode, FREQUENCY, RANGE, MONITOR).
+    // Left column: dark inset panel with four sections (AUDIO mode, FREQUENCY knob, RANGE knob, MONITOR).
     g.setColour(juce::Colour(0x38000000));
-    g.fillRoundedRectangle(44.0f, 112.0f, 166.0f, 500.0f, 9.0f);
+    g.fillRoundedRectangle(44.0f, 112.0f, 186.0f, 608.0f, 9.0f);
     g.setColour(juce::Colour(0x40ffffff));
-    g.drawRoundedRectangle(44.0f, 112.0f, 166.0f, 500.0f, 9.0f, 1.0f);
-    for (float dy : { 222.0f, 332.0f, 442.0f }) g.drawLine(58.0f, dy, 196.0f, dy, 1.0f);
+    g.drawRoundedRectangle(44.0f, 112.0f, 186.0f, 608.0f, 9.0f, 1.0f);
+    for (float dy : { 208.0f, 408.0f, 608.0f }) g.drawLine(58.0f, dy, 216.0f, dy, 1.0f);
     g.setColour(juce::Colours::white);g.setFont(juce::Font(juce::FontOptions(16.0f,juce::Font::bold)));
-    g.drawText("AUDIO",     juce::Rectangle<int>((int)kLeftX-70,128,140,22), juce::Justification::centred);
-    g.drawText("FREQUENCY", juce::Rectangle<int>((int)kLeftX-70,238,140,22), juce::Justification::centred);
-    g.drawText("RANGE",     juce::Rectangle<int>((int)kLeftX-70,348,140,22), juce::Justification::centred);
-    g.drawText("MONITOR",   juce::Rectangle<int>((int)kLeftX-70,458,140,22), juce::Justification::centred);
+    g.drawText("AUDIO",     juce::Rectangle<int>((int)kLeftX-70,122,140,22), juce::Justification::centred);
+    g.drawText("FREQUENCY", juce::Rectangle<int>((int)kLeftX-70,216,140,22), juce::Justification::centred);
+    g.drawText("RANGE",     juce::Rectangle<int>((int)kLeftX-70,416,140,22), juce::Justification::centred);
+    g.drawText("MONITOR",   juce::Rectangle<int>((int)kLeftX-70,616,140,22), juce::Justification::centred);
+    drawKnobScale(g,{kLeftX,kFreqKnobY},kKnobBox*0.5f+2.0f,"2k","12k");
+    drawKnobScale(g,{kLeftX,kRangeKnobY},kKnobBox*0.5f+2.0f,"0","20");
 
     {   std::vector<FaderTick> t; for(int v=-40; v<=0; v+=5) t.push_back({(double)v, v%10==0 ? juce::String(v) : juce::String(), v%10==0}); drawFaderScale(g,thresholdKnob,kThresholdX,t); }
 
@@ -305,11 +331,13 @@ void NFDeEsserAudioProcessorEditor::resized()
     thresholdCap.setBounds(scaleBounds({kThresholdX-65.0f, 668.0f, 130.0f, 54.0f}));
 
     // left column
-    modeBtn.setBounds(scaleBounds({kLeftX-60.0f, 164.0f, 120.0f, 30.0f}));
-    freqCap.setBounds(scaleBounds({kLeftX-65.0f, 266.0f, 130.0f, 54.0f}));
-    rangeCap.setBounds(scaleBounds({kLeftX-65.0f, 376.0f, 130.0f, 54.0f}));
-    audioBtn.setBounds(scaleBounds({kLeftX-60.0f, 490.0f, 120.0f, 30.0f}));
-    listenBtn.setBounds(scaleBounds({kLeftX-60.0f, 530.0f, 120.0f, 30.0f}));
+    modeBtn.setBounds(scaleBounds({kLeftX-60.0f, 152.0f, 120.0f, 30.0f}));
+    freqKnob.setBounds(scaleBounds({kLeftX-kKnobBox*0.5f, kFreqKnobY-kKnobBox*0.5f, kKnobBox, kKnobBox}));
+    freqCap.setBounds(scaleBounds({kLeftX-52.0f, 360.0f, 104.0f, 43.0f}));
+    rangeKnob.setBounds(scaleBounds({kLeftX-kKnobBox*0.5f, kRangeKnobY-kKnobBox*0.5f, kKnobBox, kKnobBox}));
+    rangeCap.setBounds(scaleBounds({kLeftX-52.0f, 560.0f, 104.0f, 43.0f}));
+    audioBtn.setBounds(scaleBounds({kLeftX-60.0f, 644.0f, 120.0f, 30.0f}));
+    listenBtn.setBounds(scaleBounds({kLeftX-60.0f, 682.0f, 120.0f, 30.0f}));
 
     power.setBounds(scaleBounds({679.0f, 43.0f, 66.0f, 66.0f}));
     // meters span the same travel as the faders' thumbs, so the Threshold fader reads against the input meter

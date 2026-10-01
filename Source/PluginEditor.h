@@ -236,6 +236,7 @@ public:
 private:
     struct FaderTick { double value; juce::String label; bool major; };
     void updateMonitorButtons();
+    void drawKnobScale(juce::Graphics&,juce::Point<float> centre,float radius,const juce::String& lo,const juce::String& hi);
     void drawFaderScale(juce::Graphics&,juce::Slider&,float centreX,const std::vector<FaderTick>&);
     juce::Rectangle<int> scaleBounds(juce::Rectangle<float> baseBounds) const;
     // the preset name lives in the plug-in state; refresh the tab whenever it changes (may come from a non-message thread)
@@ -256,6 +257,7 @@ private:
     NFDeEsserLogoButton logoButton;
     std::unique_ptr<juce::FileChooser> presetFileChooser;
     juce::Slider thresholdKnob;   // the only fader: Threshold
+    juce::Slider freqKnob,rangeKnob;   // round knobs in the left column
     NFDeEsserGainBubble thresholdBubble;
     NFDeEsserGainReductionMeter grMeter;   // ATTEN
     NFDeEsserLevelMeter inputMeter, outLMeter, outRMeter;
@@ -263,7 +265,7 @@ private:
     NFDeEsserPowerButton power;
     NFDeEsserToggleButton modeBtn{"SPLIT"}, audioBtn{"AUDIO"}, listenBtn{"LISTEN"};
     using SA=juce::AudioProcessorValueTreeState::SliderAttachment;
-    std::unique_ptr<SA> thresholdA,freqCapA,thresholdCapA,rangeCapA;
+    std::unique_ptr<SA> thresholdA,freqA,rangeA,freqCapA,thresholdCapA,rangeCapA;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> powerA,listenA,wideA;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NFDeEsserAudioProcessorEditor)
 };
