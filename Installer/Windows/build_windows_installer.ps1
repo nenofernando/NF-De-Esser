@@ -11,7 +11,7 @@ Environment variables (all optional):
   WRAPTOOL         path to PACE wraptool.exe (default: found on PATH)
   WRAP_ACCOUNT     PACE/iLok account used to sign (asked if missing)
   WRAP_PASSWORD    wraptool password (if not set, wraptool asks for it)
-  WRAP_GUID        wrap GUID (REQUIRED for the AAX: the NF De-Esser wrap GUID from PACE)
+  WRAP_GUID        wrap GUID (default: "NF De-Esser - Signing Only")
   EXTRA_WRAP_ARGS  extra `wraptool sign` options your PACE setup needs (e.g. Windows code-signing options)
   SKIP_AAX=1       build an installer WITHOUT AAX (VST3 only)
 The version is read from CMakeLists.txt, so a version bump needs no edit here.
@@ -25,7 +25,7 @@ $version = $m.Groups[1].Value
 $product = 'NF De-Esser'
 $withAax = ($env:SKIP_AAX -ne '1')
 $aaxSdk = if ($env:AAX_SDK_PATH) { $env:AAX_SDK_PATH } else { Join-Path $env:USERPROFILE 'Documents\AAX_SDK' }
-$wrapGuid = if ($env:WRAP_GUID) { $env:WRAP_GUID } else { '' }
+$wrapGuid = if ($env:WRAP_GUID) { $env:WRAP_GUID } else { 'A3705280-BD40-11F1-B096-005056920FF7' }
 $buildDir = Join-Path $root 'build-deesser'
 $payload = Join-Path $root 'Installer\Windows\payload'
 

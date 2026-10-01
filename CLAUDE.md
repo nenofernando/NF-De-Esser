@@ -20,8 +20,7 @@ After a bump, grep for the old version to catch anything missed:
   **No Apple Developer account for now**: VST3/AU are ad-hoc signed and the `.pkg` is unsigned (Gatekeeper: right-click > Open
   on other Macs). macOS cannot auto-launch an installer from a DMG, so the DMG opens a clean Finder window with only
   "Install NF De-Esser X.Y.Z.pkg". PACE account for signing: `nenofernando` (`WRAP_ACCOUNT`); `wraptool sign` also needs `--signid` (the wrap has "Digitally sign binary"), the script passes `WRAP_SIGNID` (auto: the owner's local keychain certificate "NF Audio Tools AAX Local Signing" if present, else `-` ad-hoc); the AAX SDK is auto-detected in `~/Documents`.
-- **AAX must be in the installers and PACE-signed** (`wraptool`). The NF De-Esser wrap GUID is NOT known yet: pass `WRAP_GUID=...`
-  (no default; the scripts stop early without it unless `SKIP_AAX=1`). AAX SDK is expected in `~/Documents/AAX_SDK`
+- **AAX must be in the installers and PACE-signed** (`wraptool`). Wrap "NF De-Esser - Signing Only" (PACE product `NFDEESSER001`), Wrap GUID `A3705280-BD40-11F1-B096-005056920FF7` (the default of both installer scripts). AAX SDK is expected in `~/Documents/AAX_SDK`
   (`AAX_SDK_PATH` overrides). `SKIP_AAX=1` is the only way to build without it. Never re-run `codesign` on a
   signed `.aaxplugin`. Never commit the AAX SDK, passwords or certificates.
 - Identifiers: bundle `com.nfaudiotools.nfdeesser`, manufacturer `Nfat`, plug-in code `Nfde`.

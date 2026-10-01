@@ -17,7 +17,7 @@
 #                             (or set WRAP_PASSWORD for a one-off run; it is never stored).
 #   AAX_SDK_PATH=/path        AAX SDK folder (default: auto-detected inside ~/Documents, e.g. ~/Documents/AAX_SDK)
 #   WRAPTOOL=/path/wraptool   PACE wraptool (default: found on PATH or under /Applications/PACEAntiPiracy)
-#   WRAP_GUID=...             wrap GUID (REQUIRED for the AAX: the NF De-Esser wrap GUID from PACE)
+#   WRAP_GUID=...             wrap GUID (default: "NF De-Esser - Signing Only")
 #   EXTRA_WRAP_ARGS="..."     extra `wraptool sign` options your PACE setup needs
 #   SIGN_ID="..."             Apple code-sign identity for VST3/AU (default "-" = ad-hoc, no Apple Developer)
 #   WRAP_SIGNID="..."         codesign identity handed to wraptool --signid for the AAX (default: SIGN_ID, else the local
@@ -53,7 +53,7 @@ if [ -z "${WRAP_SIGNID:-}" ]; then
   elif security find-identity -v -p codesigning 2>/dev/null | grep -q "$LOCAL_SIGNID"; then WRAP_SIGNID="$LOCAL_SIGNID"
   else WRAP_SIGNID="-"; fi
 fi
-WRAP_GUID="${WRAP_GUID:-}"   # no default yet: pass the NF De-Esser wrap GUID from your PACE account
+WRAP_GUID="${WRAP_GUID:-A3705280-BD40-11F1-B096-005056920FF7}"   # "NF De-Esser - Signing Only" (product NFDEESSER001)
 WITH_AAX=1; [ "${SKIP_AAX:-0}" = "1" ] && WITH_AAX=0
 PKG_NAME="Install $PRODUCT $VERSION.pkg"
 VOLNAME="$PRODUCT $VERSION"
@@ -73,8 +73,8 @@ write_resources() {
 <h1>$PRODUCT $VERSION</h1>
 <p class="by">NF Audio Tools by Nenno Fernando</p>
 <p>Welcome to the $PRODUCT installer.</p>
-<p>$PRODUCT is a simple split-band de-esser with Frequency, Threshold, Range and Output controls, a Listen button, a reduction meter
-and factory presets.</p>
+<p>$PRODUCT is a simple de-esser with Frequency, Threshold and Range controls, a Target / Full mode, a Listen monitor, level and
+reduction meters, and 11 factory presets.</p>
 <p>This installer can install the following formats. On the <b>Customize</b> step you can choose which ones to install.</p>
 <ul><li>VST3</li><li>Audio Unit (AU)</li><li>AAX (Pro Tools)</li></ul>
 <p>Click <b>Continue</b> to proceed.</p>
@@ -160,7 +160,6 @@ xcode-select -p >/dev/null 2>&1 || { echo "Xcode command line tools not found (x
 
 # ---- AAX prerequisites: fail early, before the long build --------------------------------------
 if [ "$WITH_AAX" = "1" ]; then
-  [ -n "$WRAP_GUID" ] || { echo "Set WRAP_GUID=<NF De-Esser wrap GUID> for the AAX (or SKIP_AAX=1)" >&2; exit 1; }
   if [ -z "${AAX_SDK_PATH:-}" ]; then
     for c in "$HOME/Documents/AAX_SDK" "$HOME/Documents/aax-sdk" "$HOME/Documents/AAXSDK"; do
       [ -d "$c/Interfaces" ] && AAX_SDK_PATH="$c" && break
