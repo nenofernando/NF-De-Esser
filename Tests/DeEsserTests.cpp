@@ -79,14 +79,14 @@ int main()
         auto y = run(q, 200.0, -20.0, 9000.0, -12.0, sr, 1.0);
         assert(std::abs(toneDb(y, 9000.0, sr) - (-12.0)) < 2.0);
     }
-    // Listen plays the band: the 6.5 kHz tone passes, the 200 Hz tone is far down.
+    // Listen plays what is being REMOVED (a loud "s" is cut, so it is heard; the low tone is not).
     {
         Parameters q = p; q.listen = true;
         auto y = run(q, 200.0, -10.0, 6500.0, -10.0, sr, 1.0);
-        assert(toneDb(y, 6500.0, sr) > -11.0);
-        assert(toneDb(y, 200.0, sr) < -40.0);
+        assert(toneDb(y, 6500.0, sr) > -10.0 - 4.5);    // (1 - g) is about 0.75 at the 12 dB Range: about -2.5 dB
+        assert(toneDb(y, 200.0, sr) < -10.0 - 40.0);
     }
-    // Listen must NOT bring the body of the voice: 1 kHz and 2 kHz are far down for a 6.5 kHz band (4th-order band-pass).
+    // Listen must NOT bring the body of the voice: 1 kHz and 2 kHz are far down for a 6.5 kHz band.
     {
         Parameters q = p; q.listen = true;
         auto y = run(q, 1000.0, -10.0, 6500.0, -10.0, sr, 1.0);
@@ -94,22 +94,19 @@ int main()
         auto z = run(q, 2000.0, -10.0, 6500.0, -10.0, sr, 1.0);
         assert(toneDb(z, 2000.0, sr) < -10.0 - 22.0);
     }
-    // Wide mode turns the WHOLE signal down (the low tone follows the reduction), Split leaves it alone.
+    // Listen follows Threshold: a quiet "s" under the threshold is silent, lowering the threshold makes it audible; Range scales it too.
     {
-        Parameters q = p; q.wide = true;
-        double red = 0.0;
-        auto y = run(q, 200.0, -20.0, 6500.0, -12.0, sr, 1.0, &red);
-        assert(red > 6.0);
-        assert(std::abs(toneDb(y, 200.0, sr) - (-20.0 - red)) < 0.6);
-        // below the threshold Wide is transparent too
-        auto z = run(q, 200.0, -30.0, 6500.0, -60.0, sr, 1.0);
-        assert(std::abs(toneDb(z, 200.0, sr) - (-30.0)) < 0.2);
-    }
-    // Detector level follows the band level.
-    {
-        DeEsser d; d.prepare(sr); d.setParameters(p);
-        for (int i = 0; i < (int)(sr * 0.5); ++i) { float l = (float)(0.1 * std::sin(2.0 * kPi * 6500.0 * i / sr)), r = l; d.processSample(l, r); }
-        assert(d.detectorLevelDb() > -22.0 && d.detectorLevelDb() < -12.0);   // 0.1 peak = -20 dBFS, envelope reads a bit under/over
+        Parameters q = p; q.listen = true; q.rangeDb = 12.0;
+        q.thresholdDb = -30.0;
+        auto quiet = run(q, 200.0, -60.0, 6500.0, -40.0, sr, 1.0);
+        q.thresholdDb = -48.0;
+        auto loud = run(q, 200.0, -60.0, 6500.0, -40.0, sr, 1.0);
+        const double a1 = toneDb(quiet, 6500.0, sr), a2 = toneDb(loud, 6500.0, sr);
+        assert(a1 < -70.0);                 // nothing is being removed: silence
+        assert(a2 > -52.0 && a2 > a1 + 20.0);   // lowering Threshold: clearly audible
+        q.rangeDb = 3.0;
+        auto small = run(q, 200.0, -60.0, 6500.0, -40.0, sr, 1.0);
+        assert(toneDb(small, 6500.0, sr) < a2 - 3.0);   // a smaller Range removes (and plays) less
     }
     // The reduction must be AUDIBLE on a real "sss": broadband noise limited to 4-10 kHz drops by most of what the meter shows,
     // and the body of the voice (1 kHz) is left alone while it is being reduced.

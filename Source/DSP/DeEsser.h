@@ -10,7 +10,8 @@
 //   red   = soft-knee reduction above Threshold, never more than Range (the amount at the centre frequency)
 //   Split (default): y = x + (g - 1) * wideBand,   g = 10^(-red/20)   -> only the sibilance region is turned down (like a dynamic bell)
 //   Wide:            y = x * g                                         -> the whole signal is turned down (same detector)
-// Listen outputs the narrow band (what the detector hears).
+// Listen outputs what is being REMOVED: (1 - g) * band (the narrow detector band), so it follows Threshold and Range: silent while nothing is
+// reduced, louder the more is taken out, and it never brings the body of the voice.
 #include <algorithm>
 #include <cmath>
 
@@ -75,9 +76,9 @@ public:
         else if (over > -3.0) kneed = (over + 3.0) * (over + 3.0) / 12.0;
         reductionDb = std::min(params.rangeDb, kneed * kSlope);
 
-        if (params.listen) { left = (float) bl; right = (float) br; return; }
-
         const double g = std::pow(10.0, -reductionDb / 20.0);
+        if (params.listen) { left = (float) ((1.0 - g) * bl); right = (float) ((1.0 - g) * br); return; }   // what is being taken out
+
         if (params.wide) { left = (float) (xl * g); right = (float) (xr * g); return; }
         left = (float) (xl + (g - 1.0) * wl);
         right = (float) (xr + (g - 1.0) * wr);

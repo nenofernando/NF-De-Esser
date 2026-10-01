@@ -80,7 +80,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     for(auto* b:{&modeBtn,&listenBtn}) { addAndMakeVisible(*b); b->setClickingTogglesState(true); }
     addAndMakeVisible(audioBtn);
     audioBtn.setTooltip("Monitor the normal audio");
-    listenBtn.setTooltip("Monitor the band the de-esser hears (side-chain), to find the sibilance");
+    listenBtn.setTooltip("Listen: plays only what the de-esser is taking out (follows Threshold and Range)");
     audioBtn.onClick = [this]{ if (auto* q = processor.apvts.getParameter("listen")) { q->beginChangeGesture(); q->setValueNotifyingHost(0.0f); q->endChangeGesture(); } };
     addAndMakeVisible(thresholdBubble);
     addAndMakeVisible(grMeter);
