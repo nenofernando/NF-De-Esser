@@ -1,14 +1,16 @@
 #pragma once
 // NF De-Esser DSP. JUCE-free so the unit tests can run it anywhere.
 //
-// Split-band de-esser: a narrow 4th-order band-pass (two cascaded 2nd-order stages) around the chosen frequency is both the detector and
-// the part that gets turned down, so everything outside the sibilance band (voice body, low mids) passes through untouched.
-//   band  = bandpass(x, freq)                      (unity gain at the centre)
+// Split-band de-esser. Two band-passes around the chosen frequency:
+//   band  = narrow 4th-order band-pass (two cascaded 2nd-order stages): the DETECTOR and the Listen monitor, so the voice body
+//           never reaches the detector and Listen plays only the "s"
+//   wideBand = wider 2nd-order band-pass (Q 0.65): the part that is TURNED DOWN, so the whole sibilance region (not only a thin slice
+//           around the centre) is reduced and the effect is clearly audible
 //   level = envelope of max(|bandL|, |bandR|)      (stereo linked)
-//   red   = soft-knee reduction above Threshold, never more than Range
-//   Split (default): y = x + (g - 1) * band,   g = 10^(-red/20)   -> only the band is turned down
-//   Wide:            y = x * g                                      -> the whole signal is turned down (same detector)
-// Listen outputs the band itself (what the detector hears).
+//   red   = soft-knee reduction above Threshold, never more than Range (the amount at the centre frequency)
+//   Split (default): y = x + (g - 1) * wideBand,   g = 10^(-red/20)   -> only the sibilance region is turned down (like a dynamic bell)
+//   Wide:            y = x * g                                         -> the whole signal is turned down (same detector)
+// Listen outputs the narrow band (what the detector hears).
 #include <algorithm>
 #include <cmath>
 
@@ -16,6 +18,7 @@ namespace nfdeesser
 {
 inline constexpr double kMinFreqHz = 2000.0, kMaxFreqHz = 12000.0;
 inline constexpr double kMaxRangeDb = 20.0;
+inline constexpr double kApplyQ = 0.65;   // Q of the band that is turned down (lower = wider)
 
 struct Parameters
 {
@@ -41,6 +44,7 @@ public:
     {
         for (auto& f : bp) f.z1 = f.z2 = 0.0;
         for (auto& f : bp2) f.z1 = f.z2 = 0.0;
+        for (auto& f : ap) f.z1 = f.z2 = 0.0;
         env = 0.0; reductionDb = 0.0;
     }
     void setParameters(const Parameters& p)
@@ -55,6 +59,7 @@ public:
     {
         const double xl = left, xr = right;
         const double bl = bp2[0].process(bp[0].process(xl)), br = bp2[1].process(bp[1].process(xr));
+        const double wl = ap[0].process(xl), wr = ap[1].process(xr);   // the wider band that is actually turned down
 
         // detector: peak envelope of the band, stereo linked
         const double level = std::max(std::abs(bl), std::abs(br));
@@ -73,8 +78,8 @@ public:
 
         const double g = std::pow(10.0, -reductionDb / 20.0);
         if (params.wide) { left = (float) (xl * g); right = (float) (xr * g); return; }
-        left = (float) (xl + (g - 1.0) * bl);
-        right = (float) (xr + (g - 1.0) * br);
+        left = (float) (xl + (g - 1.0) * wl);
+        right = (float) (xr + (g - 1.0) * wr);
     }
 
     double gainReductionDb() const { return reductionDb; }
@@ -106,11 +111,20 @@ private:
             f.b0 = alpha / a0; f.b1 = 0.0; f.b2 = -alpha / a0;
             f.a1 = -2.0 * cw / a0; f.a2 = (1.0 - alpha) / a0;
         }
+        // the wider band that is turned down (Q 0.65, 2nd order)
+        constexpr double Qa = kApplyQ;
+        const double alphaA = std::sin(w0) / (2.0 * Qa), a0a = 1.0 + alphaA;
+        for (auto& f : ap)
+        {
+            f.b0 = alphaA / a0a; f.b1 = 0.0; f.b2 = -alphaA / a0a;
+            f.a1 = -2.0 * cw / a0a; f.a2 = (1.0 - alphaA) / a0a;
+        }
         filterFreq = params.freqHz;
     }
 
     double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, reductionDb = 0.0, filterFreq = -1.0;
     Parameters params;
-    Biquad bp[2], bp2[2];   // two cascaded stages per channel
+    Biquad bp[2], bp2[2];   // detector / Listen: two cascaded stages per channel
+    Biquad ap[2];           // the band that is turned down
 };
 }

@@ -29,8 +29,12 @@ After a bump, grep for the old version to catch anything missed:
 ## Design notes
 - UI is a fixed 1200x400 layout scaled uniformly; keep the approved look (do not add controls unasked). Owner's design (modelled on a classic de-esser layout he showed): left column MODE (TARGET / FULL button; the owner chose these names, do not call them Split/Wide) / RANGE (round knob + value box) / FREQUENCY (round knob + value box) / MONITOR (Audio, Listen); Threshold is the ONLY fader (component id "fader", silver ribbed cap with a black centre line); it has an input meter beside it (detector level, -40..0 dB, same range as the fader), the REDUCTION meter (do not call it ATTEN: too close to another maker's wording), then L/R output peak meters (-30..0 dB). The owner does NOT want an Output gain control (only Frequency, Range and Threshold). Fader scale marks are drawn from `Slider::getPositionOfValue` so they always line up; the meters span the same travel as the thumb (`kThumbMargin`).
 - DSP is JUCE-free in `Source/DSP/DeEsser.h` and covered by `Tests/DeEsserTests.cpp`.
-- Split-band: a 4th-order band-pass (two cascaded RBJ stages, Q 1.8 each; -43 dB at 1 kHz for a 6.5 kHz band, so Listen does not bring the body of the voice - the owner compared it with other de-essers) at Frequency is both the detector (stereo-linked peak envelope, 0.4 ms attack / 40 ms release) and the
-  part that is turned down: `y = x + (g-1) * band`. Soft knee 6 dB, effective ratio 4:1, reduction never above Range. Listen outputs the band.
+- Detector + Listen: a 4th-order band-pass at Frequency (two cascaded RBJ stages, Q 1.8 each; -43 dB at 1 kHz for a 6.5 kHz band, so Listen does not bring the
+  body of the voice - the owner compared it with other de-essers). Stereo-linked peak envelope (0.4 ms attack / 40 ms release), soft knee 6 dB,
+  effective ratio 4:1, reduction never above Range (the amount at the centre frequency).
+- What is turned down (TARGET mode): `y = x + (g-1) * wideBand`, where wideBand is a WIDER 2nd-order band-pass (Q 0.65, `kApplyQ`). With the narrow band
+  alone the meter showed 8 dB but the real sibilance only dropped 0.7 dB (the owner reported "no difference when I move Threshold"). Measured now: 8 dB at the
+  centre = about 5.4 dB on a 4-10 kHz "sss", while 1 kHz stays untouched (tests cover both). FULL mode: `y = x * g`. Listen outputs the narrow band.
   Power off = untouched input. No latency, no oversampling.
 - Parameters: `freq` 2-12 kHz (centre 5 kHz), `threshold`, `range`, `listen`, `full` (false = TARGET, only the band; true = FULL, whole signal; the DSP field is still called `wide`), `power`. The processor publishes `gainReductionDb`, `detectorLevelDb` and `outputLevelDb[2]` for the meters.
 - No licence system yet (NF Q3 has one); decide before selling.
