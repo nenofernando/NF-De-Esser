@@ -10,7 +10,7 @@ NFDeEsserAudioProcessor::NFDeEsserAudioProcessor()
     thresholdParam = apvts.getRawParameterValue("threshold");
     rangeParam = apvts.getRawParameterValue("range");
     listenParam = apvts.getRawParameterValue("listen");
-    wideParam = apvts.getRawParameterValue("wide");
+    fullParam = apvts.getRawParameterValue("full");
     powerParam = apvts.getRawParameterValue("power");
 }
 
@@ -51,7 +51,7 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
     p.thresholdDb = thresholdParam->load();
     p.rangeDb = rangeParam->load();
     p.listen = listenParam->load() > 0.5f;
-    p.wide = wideParam->load() > 0.5f;
+    p.wide = fullParam->load() > 0.5f;   // FULL = whole signal (the DSP calls it "wide")
     deEsser.setParameters(p);
 
     const int numCh = std::min(2, buffer.getNumChannels());
@@ -83,7 +83,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NFDeEsserAudioProcessor::cre
     p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"range",1},"Range",juce::NormalisableRange<float>(0.0f,(float) nfdeesser::kMaxRangeDb,0.5f),8.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"listen",1},"Listen",false));
-    p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"wide",1},"Wide band",false));
+    p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"full",1},"Full band",false));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"power",1},"Power",true));
     return {p.begin(),p.end()};
 }

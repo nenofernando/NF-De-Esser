@@ -79,7 +79,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     addAndMakeVisible(power);power.setClickingTogglesState(true);
     for(auto* b:{&modeBtn,&listenBtn}) { addAndMakeVisible(*b); b->setClickingTogglesState(true); }
     addAndMakeVisible(audioBtn);
-    modeBtn.setTooltip("SPLIT: only the sibilance band is turned down. WIDE: the whole signal is turned down (same detector)");
+    modeBtn.setTooltip("TARGET: only the sibilance band is turned down. FULL: the whole signal is turned down (same detector)");
     audioBtn.setTooltip("Monitor the normal audio");
     listenBtn.setTooltip("Monitor the band the de-esser hears (side-chain), to find the sibilance");
     audioBtn.onClick = [this]{ if (auto* q = processor.apvts.getParameter("listen")) { q->beginChangeGesture(); q->setValueNotifyingHost(0.0f); q->endChangeGesture(); } };
@@ -95,7 +95,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     freqCapA=std::make_unique<SA>(a,"freq",freqCap.slider);thresholdCapA=std::make_unique<SA>(a,"threshold",thresholdCap.slider);rangeCapA=std::make_unique<SA>(a,"range",rangeCap.slider);
     powerA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"power",power);
     listenA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"listen",listenBtn);
-    wideA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"wide",modeBtn);
+    wideA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"full",modeBtn);
     power.onStateChange=[this]{repaint();};
     listenBtn.onStateChange=[this]{ updateMonitorButtons(); };
     modeBtn.onStateChange=[this]{ updateMonitorButtons(); };
@@ -104,7 +104,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
 void NFDeEsserAudioProcessorEditor::updateMonitorButtons()
 {
     audioBtn.setToggleState(!listenBtn.getToggleState(), juce::dontSendNotification);
-    modeBtn.setLabel(modeBtn.getToggleState() ? "WIDE" : "SPLIT");
+    modeBtn.setLabel(modeBtn.getToggleState() ? "FULL" : "TARGET");
 }
 NFDeEsserAudioProcessorEditor::~NFDeEsserAudioProcessorEditor(){processor.apvts.state.removeListener(this);cancelPendingUpdate();setLookAndFeel(nullptr);}
 

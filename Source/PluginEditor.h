@@ -48,7 +48,7 @@ private:
     float shown = 0.0f, lastPainted = -1.0f;
 };
 
-// Cream push-button that lights amber when on (AUDIO / LISTEN / SPLIT-WIDE in the left column). The text can change with the state.
+// Cream push-button that lights amber when on (AUDIO / LISTEN / TARGET-FULL in the left column). The text can change with the state.
 class NFDeEsserToggleButton final:public juce::ToggleButton
 {
 public:
@@ -263,7 +263,7 @@ private:
     NFDeEsserLevelMeter inputMeter, outLMeter, outRMeter;
     ValueCapsule freqCap,thresholdCap,rangeCap;
     NFDeEsserPowerButton power;
-    NFDeEsserToggleButton modeBtn{"SPLIT"}, audioBtn{"AUDIO"}, listenBtn{"LISTEN"};
+    NFDeEsserToggleButton modeBtn{"TARGET"}, audioBtn{"AUDIO"}, listenBtn{"LISTEN"};
     using SA=juce::AudioProcessorValueTreeState::SliderAttachment;
     std::unique_ptr<SA> thresholdA,freqA,rangeA,freqCapA,thresholdCapA,rangeCapA;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> powerA,listenA,wideA;
