@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "NFDeEsserBinaryData.h"
 #include "FactoryPresets.h"
+#include "ManualManager.h"
 #ifndef JucePlugin_VersionString
  #define JucePlugin_VersionString "0.0.0-test"
 #endif
@@ -122,6 +123,10 @@ juce::Rectangle<int> NFDeEsserAudioProcessorEditor::scaleBounds(juce::Rectangle<
 void NFDeEsserAudioProcessorEditor::showMainMenu()
 {
     juce::PopupMenu menu;
+    menu.addSectionHeader("MANUALS");
+    menu.addItem(10, "Manual - Portugues");
+    menu.addItem(11, "Manual - English");
+    menu.addSeparator();
     menu.addItem(3, "About");
     juce::Component::SafePointer<NFDeEsserAudioProcessorEditor> safeThis(this);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&menuButton),
@@ -129,6 +134,8 @@ void NFDeEsserAudioProcessorEditor::showMainMenu()
         {
             if (safeThis == nullptr || result == 0) return;
             if (result == 3) safeThis->showAbout();
+            else if (result == 10) nfdeesser::ManualManager::openManual(NFDeEsserBinaryData::NF_DeEsser_Manual_Portugues_pdf, NFDeEsserBinaryData::NF_DeEsser_Manual_Portugues_pdfSize, "NF_DeEsser_Manual_Portugues_V1.0.pdf");
+            else if (result == 11) nfdeesser::ManualManager::openManual(NFDeEsserBinaryData::NF_DeEsser_Manual_English_pdf, NFDeEsserBinaryData::NF_DeEsser_Manual_English_pdfSize, "NF_DeEsser_Manual_English_V1.0.pdf");
         });
 }
 
