@@ -265,9 +265,9 @@ private:
     NFDeEsserLevelMeter inputMeter, outLMeter, outRMeter;
     ValueCapsule freqCap,thresholdCap,rangeCap;
     NFDeEsserPowerButton power;
-    NFDeEsserToggleButton modeBtn{"TARGET"}, scBtn{"HIGH"}, audioBtn{"AUDIO"}, listenBtn{"LISTEN"};
+    NFDeEsserToggleButton modeBtn{"TARGET"}, scBtn{"HIGH"}, voiceBtn{"VOICE"}, audioBtn{"AUDIO"}, listenBtn{"LISTEN"};
     using SA=juce::AudioProcessorValueTreeState::SliderAttachment;
     std::unique_ptr<SA> thresholdA,freqA,rangeA,freqCapA,thresholdCapA,rangeCapA;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> powerA,listenA,wideA,scA;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> powerA,listenA,wideA,scA,voiceA;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NFDeEsserAudioProcessorEditor)
 };

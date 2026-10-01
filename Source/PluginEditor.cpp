@@ -74,7 +74,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     }
     for(auto* c:{&freqCap,&thresholdCap,&rangeCap}) addAndMakeVisible(*c);
     addAndMakeVisible(power);power.setClickingTogglesState(true);
-    for(auto* b:{&modeBtn,&scBtn,&listenBtn}) { addAndMakeVisible(*b); b->setClickingTogglesState(true); }
+    for(auto* b:{&modeBtn,&scBtn,&voiceBtn,&listenBtn}) { addAndMakeVisible(*b); b->setClickingTogglesState(true); }
     addAndMakeVisible(audioBtn);
     audioBtn.onClick = [this]{ if (auto* q = processor.apvts.getParameter("listen")) { q->beginChangeGesture(); q->setValueNotifyingHost(0.0f); q->endChangeGesture(); } };
     addAndMakeVisible(thresholdBubble);
@@ -91,6 +91,8 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     listenA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"listen",listenBtn);
     wideA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"full",modeBtn);
     scA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"sidechainHigh",scBtn);
+    voiceA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"voice",voiceBtn);
+    voiceBtn.onStateChange=[this]{ updateMonitorButtons(); };
     power.onStateChange=[this]{repaint();};
     listenBtn.onStateChange=[this]{ updateMonitorButtons(); };
     modeBtn.onStateChange=[this]{ updateMonitorButtons(); };
@@ -102,6 +104,7 @@ void NFDeEsserAudioProcessorEditor::updateMonitorButtons()
     audioBtn.setToggleState(!listenBtn.getToggleState(), juce::dontSendNotification);
     modeBtn.setLabel(modeBtn.getToggleState() ? "FULL" : "TARGET");
     scBtn.setLabel(scBtn.getToggleState() ? "HIGH" : "BAND");
+    voiceBtn.setLabel(voiceBtn.getToggleState() ? "VOICE" : "INSTR");
 }
 NFDeEsserAudioProcessorEditor::~NFDeEsserAudioProcessorEditor(){processor.apvts.state.removeListener(this);cancelPendingUpdate();setLookAndFeel(nullptr);}
 
@@ -330,7 +333,8 @@ void NFDeEsserAudioProcessorEditor::resized()
 
     // left column
     modeBtn.setBounds(scaleBounds({kLeftX-60.0f, 148.0f, 120.0f, 30.0f}));
-    scBtn.setBounds(scaleBounds({kLeftX-60.0f, 226.0f, 120.0f, 30.0f}));
+    scBtn.setBounds(scaleBounds({kLeftX-83.0f, 226.0f, 80.0f, 30.0f}));
+    voiceBtn.setBounds(scaleBounds({kLeftX+3.0f, 226.0f, 80.0f, 30.0f}));
     rangeKnob.setBounds(scaleBounds({kLeftX-kKnobBox*0.5f, kRangeKnobY-kKnobBox*0.5f, kKnobBox, kKnobBox}));
     rangeCap.setBounds(scaleBounds({kLeftX-52.0f, 402.0f, 104.0f, 43.0f}));
     freqKnob.setBounds(scaleBounds({kLeftX-kKnobBox*0.5f, kFreqKnobY-kKnobBox*0.5f, kKnobBox, kKnobBox}));

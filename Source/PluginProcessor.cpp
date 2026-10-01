@@ -13,6 +13,7 @@ NFDeEsserAudioProcessor::NFDeEsserAudioProcessor()
     fullParam = apvts.getRawParameterValue("full");
     highParam = apvts.getRawParameterValue("sidechainHigh");
     powerParam = apvts.getRawParameterValue("power");
+    voiceParam = apvts.getRawParameterValue("voice");
 }
 
 void NFDeEsserAudioProcessor::prepareToPlay(double sr,int)
@@ -73,6 +74,7 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
     p.rangeDb = rangeParam->load();
     p.listen = listenParam->load() > 0.5f;
     p.wide = fullParam->load() > 0.5f;   // FULL = whole signal (the DSP calls it "wide")
+    p.smart = voiceParam->load() > 0.5f;     // VOICE: only reduce where the highs stand out from the body; INSTR: plain level-based
     p.highPass = highParam->load() > 0.5f;   // side-chain filter: HIGH (above Frequency) or BAND
     deEsser.setParameters(p);
 
@@ -107,6 +109,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NFDeEsserAudioProcessor::cre
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"listen",1},"Listen",false));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"full",1},"Full band",false));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"sidechainHigh",1},"Side-chain high-pass",true));
+    p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"voice",1},"Source voice",true));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"power",1},"Power",true));
     return {p.begin(),p.end()};
 }

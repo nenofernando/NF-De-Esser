@@ -232,6 +232,17 @@ int main()
         for (int i = 0; i < 1000; ++i) { l = 0.0f; r = 0.0f; d.processSample(l, r); assert(l == 0.0f && r == 0.0f); }
     }
 
+    // VOICE vs INSTR: a bright tone riding on a strong low body (a guitar pick) is left alone by the sibilance gate (VOICE)
+    // and reduced by the plain level detector (INSTR); a tone with no body (an "s") is reduced either way.
+    {
+        Parameters q = p; q.freqHz = 6500.0; q.thresholdDb = -30.0; q.rangeDb = 8.0;
+        double redVoice = 0.0, redInstr = 0.0, redSVoice = 0.0, redSInstr = 0.0;
+        q.smart = true;  run(q, 200.0, -6.0, 8000.0, -22.0, sr, 1.0, &redVoice);   run(q, 200.0, -90.0, 8000.0, -22.0, sr, 1.0, &redSVoice);
+        q.smart = false; run(q, 200.0, -6.0, 8000.0, -22.0, sr, 1.0, &redInstr);   run(q, 200.0, -90.0, 8000.0, -22.0, sr, 1.0, &redSInstr);
+        assert(redVoice < 1.0);
+        assert(redInstr > 3.0);
+        assert(redSVoice > 3.0 && redSInstr > 3.0);
+    }
     // Factory presets: unique names, every value inside its control's range, "Default" first.
     assert(kNumFactoryPresets >= 10 && std::strcmp(kFactoryPresets[0].name, "Default") == 0);
     for (int i = 0; i < kNumFactoryPresets; ++i)

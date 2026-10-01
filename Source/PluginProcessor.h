@@ -35,7 +35,7 @@ private:
     void measureOutput(const juce::AudioBuffer<float>&);
     nfdeesser::DeEsser deEsser;
     std::atomic<float> *freqParam = nullptr, *thresholdParam = nullptr, *rangeParam = nullptr,
-                       *listenParam = nullptr, *fullParam = nullptr, *highParam = nullptr, *powerParam = nullptr;
+                       *listenParam = nullptr, *fullParam = nullptr, *highParam = nullptr, *voiceParam = nullptr, *powerParam = nullptr;
     bool wasPowered = true;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NFDeEsserAudioProcessor)
 };
