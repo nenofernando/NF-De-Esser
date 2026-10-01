@@ -1,3 +1,4 @@
+#undef NDEBUG   // the checks must run in Release builds too
 #include "../Source/DSP/DeEsser.h"
 #include "../Source/FactoryPresets.h"
 #include <cassert>
