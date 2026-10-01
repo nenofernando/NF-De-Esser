@@ -10,7 +10,7 @@ namespace
 juce::Image readyAsset(const char* data, int size) { return juce::ImageCache::getFromMemory(data, size); }
 
 // Base layout: square, 800 x 800. Left column (mode / frequency / range / monitor), then the Threshold fader (the only fader) with its input meter,
-// the ATTEN meter, and the L / R output level meters (no output control).
+// the REDUCTION meter, and the L / R output level meters (no output control).
 constexpr int kDefaultSize = 540;   // 800 x 800 base shown at 0.675, the same text scale as the 810 x 270 plug-ins
 constexpr float kThresholdX = 330.0f, kAttenX = 480.0f, kOutLX = 656.0f, kOutRX = 686.0f;
 constexpr float kFaderW = 56.0f, kFaderY = 112.0f, kFaderH = 500.0f;   // vertical fader box (base units)
@@ -289,7 +289,7 @@ void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
     const std::pair<float,const char*> names[]={{kThresholdX,"THRESHOLD"}};
     for (auto& n : names) g.drawText(n.second, juce::Rectangle<int>((int)n.first-80,636,160,24), juce::Justification::centred);
     g.setFont(juce::Font(juce::FontOptions(16.0f,juce::Font::bold)));
-    g.drawText("ATTEN", juce::Rectangle<int>((int)kAttenX-50,636,100,24), juce::Justification::centred);
+    g.drawText("REDUCTION", juce::Rectangle<int>((int)kAttenX-60,636,120,24), juce::Justification::centred);
     g.setFont(juce::Font(juce::FontOptions(12.0f)));
     g.drawText("IN",  juce::Rectangle<int>((int)kThresholdX+26,92,48,16), juce::Justification::centred);
     g.drawText("L",   juce::Rectangle<int>((int)kOutLX-8,613,40,16), juce::Justification::centred);
@@ -345,7 +345,7 @@ void NFDeEsserAudioProcessorEditor::resized()
     inputMeter.setBounds(scaleBounds({kThresholdX+38.0f, mTop, 24.0f, mH}));
     outLMeter.setBounds(scaleBounds({kOutLX, mTop, 24.0f, mH}));
     outRMeter.setBounds(scaleBounds({kOutRX, mTop, 24.0f, mH}));
-    // ATTEN: the bar (14px into the 80px box) is centred on kAttenX
+    // REDUCTION meter: the bar (14px into the 80px box) is centred on kAttenX
     grMeter.setBounds(scaleBounds({kAttenX-27.0f, 112.0f, 80.0f, 500.0f}));
     logoButton.setBounds(scaleBounds({42.0f, 17.0f, 108.0f, 62.0f}));
     thresholdBubble.setBounds(scaleBounds({kThresholdX-38.0f, 84.0f, 76.0f, 24.0f}));

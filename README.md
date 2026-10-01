@@ -6,7 +6,7 @@ Layout inspired by classic de-esser plug-ins, in the NF look (with a **black bru
 - **Left column:** **AUDIO** mode (**SPLIT**: only the sibilance band is turned down, **WIDE**: the whole signal is turned down), **FREQUENCY** (2-12 kHz,
   round knob with a value box) and **MONITOR** (**AUDIO** / **LISTEN**: Listen plays only the band the de-esser hears, to find the "s").
 - **Range** (0..20 dB: the most it will ever turn down) is a round knob in the left column, like Frequency.
-- **Threshold** (-40..0 dB) is the only fader, with an input meter beside it (what the detector hears); then the **ATTEN** meter (gain reduction)
+- **Threshold** (-40..0 dB) is the only fader, with an input meter beside it (what the detector hears); then the **REDUCTION** meter (gain reduction)
   and L / R output level meters. There is no output gain control.
 - Power and 11 factory presets (male / female / rock / pop / podcast / heavy voice, acoustic guitar, hi-hat, overheads, mix bus, master) plus save/load.
 
