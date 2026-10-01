@@ -7,7 +7,7 @@ Layout inspired by classic de-esser plug-ins, in the NF look (with a **black bru
   ever turn down) and **FREQUENCY** (2-12 kHz), both round knobs with a value box, and **MONITOR** (**AUDIO** / **LISTEN**: plays only what the de-esser is taking out, so it follows Threshold and Range: silent while nothing is reduced, louder as you lower Threshold).
 - **Threshold** (-40..0 dB) is the only fader, with an input meter beside it (what the detector hears); then the **REDUCTION** meter (gain reduction)
   and L / R output level meters. There is no output gain control.
-- Power and 11 factory presets (male / female / rock / pop / podcast / heavy voice, acoustic guitar, hi-hat, overheads, mix bus, master) plus save/load.
+- Power and 12 factory presets (male / female / rock / pop / podcast / heavy voice, acoustic guitar, hi-hat, overheads, mix bus, master) plus save/load.
 
 No latency.
 
@@ -24,4 +24,4 @@ See `CLAUDE.md` for the rules (version, AAX SDK, signing).
 g++ -std=c++17 -Wall -Wextra Tests/DeEsserTests.cpp -o dsp_tests && ./dsp_tests
 ```
 
-This plug-in is **square** (owner's design): it opens at 540 x 540 (resizable, always 1:1) and remembers the size you choose with the resize handle; double-click the NF logo to go back to 540 x 540. A small preset tab (prev / name / next) sits at the top right; the 3-line button holds About.
+This plug-in is **square** (owner's design): it opens at 540 x 540 (resizable, always 1:1) and remembers the size you choose with the resize handle; click the NF logo to go back to 540 x 540. A small preset tab (prev / name / next) sits at the top right; the 3-line button holds About.

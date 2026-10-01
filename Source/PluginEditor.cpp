@@ -44,7 +44,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     }
 
     addAndMakeVisible(logoButton);
-    logoButton.setTooltip("Double-click: reset UI size");
+    logoButton.setTooltip("Click: reset UI size");
     logoButton.onDoubleClick = [this]{ setSize(kDefaultSize,kDefaultSize); };
 
     addAndMakeVisible(menuButton);

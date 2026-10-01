@@ -12,6 +12,7 @@ struct FactoryPreset
 };
 
 inline constexpr FactoryPreset kFactoryPresets[] = {
+    { "Default",          6500.0f, -20.0f, 12.0f },   // the plug-in's starting point (also what a fresh instance loads)
     { "Vocal Male",       5500.0f, -26.0f,  8.0f },
     { "Vocal Female",     7500.0f, -26.0f,  8.0f },
     { "Vocal Rock",       6000.0f, -30.0f, 10.0f },

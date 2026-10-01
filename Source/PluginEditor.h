@@ -118,12 +118,14 @@ class NFDeEsserPowerButton final:public juce::ToggleButton
 public:void paintButton(juce::Graphics&,bool,bool) override;
 };
 
-// Invisible hit-target over the NF logo: double-click returns the window to its original size.
+// Invisible hit-target over the NF logo: a click returns the window to its original size.
 class NFDeEsserLogoButton final:public juce::Component, public juce::SettableTooltipClient
 {
 public:
     std::function<void()> onDoubleClick;
     NFDeEsserLogoButton(){ setMouseCursor(juce::MouseCursor::PointingHandCursor); }
+    // a single click on the NF logo brings the window back to its normal size (the double-click does the same)
+    void mouseUp(const juce::MouseEvent& e) override { if (contains(e.getPosition()) && onDoubleClick) onDoubleClick(); }
     void mouseDoubleClick(const juce::MouseEvent&) override { if (onDoubleClick) onDoubleClick(); }
 };
 

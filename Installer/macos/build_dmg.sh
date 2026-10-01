@@ -74,7 +74,7 @@ write_resources() {
 <p class="by">NF Audio Tools by Nenno Fernando</p>
 <p>Welcome to the $PRODUCT installer.</p>
 <p>$PRODUCT is a simple de-esser with Frequency, Threshold and Range controls, a Target / Full mode, a Listen monitor, level and
-reduction meters, and 11 factory presets.</p>
+reduction meters, and 12 factory presets.</p>
 <p>This installer can install the following formats. On the <b>Customize</b> step you can choose which ones to install.</p>
 <ul><li>VST3</li><li>Audio Unit (AU)</li><li>AAX (Pro Tools)</li></ul>
 <p>Click <b>Continue</b> to proceed.</p>
