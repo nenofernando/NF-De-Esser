@@ -30,6 +30,7 @@ void PresetManager::applyFactoryPreset(juce::AudioProcessorValueTreeState& apvts
     setParamValue(apvts, "range", f.rangeDb);
     setParamValue(apvts, "listen", 0.0f);
     setParamValue(apvts, "full", 0.0f);
+    setParamValue(apvts, "sidechainHigh", f.highPass ? 1.0f : 0.0f);
     setParamValue(apvts, "power", 1.0f);
 }
 

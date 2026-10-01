@@ -16,7 +16,7 @@ constexpr float kThresholdX = 330.0f, kAttenX = 480.0f, kOutLX = 656.0f, kOutRX 
 constexpr float kFaderW = 56.0f, kFaderY = 112.0f, kFaderH = 500.0f;   // vertical fader box (base units)
 constexpr float kThumbMargin = 28.0f;                                    // fader thumb travel margin (half the cap height, 0.5 * width): the meters span the same range
 constexpr float kLeftX = 137.0f;                                         // centre of the left column
-constexpr float kKnobBox = 96.0f, kRangeKnobY = 302.0f, kFreqKnobY = 502.0f;   // Range on top, Frequency below   // round knobs (base units)
+constexpr float kKnobBox = 84.0f, kRangeKnobY = 356.0f, kFreqKnobY = 536.0f;   // Range on top, Frequency below   // round knobs (base units)
 
 juce::String formatDb(double v){ return juce::String(juce::roundToInt(v))+" dB"; }
 juce::String formatRange(double v){ return juce::String(v,1)+" dB"; }
@@ -74,7 +74,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     }
     for(auto* c:{&freqCap,&thresholdCap,&rangeCap}) addAndMakeVisible(*c);
     addAndMakeVisible(power);power.setClickingTogglesState(true);
-    for(auto* b:{&modeBtn,&listenBtn}) { addAndMakeVisible(*b); b->setClickingTogglesState(true); }
+    for(auto* b:{&modeBtn,&scBtn,&listenBtn}) { addAndMakeVisible(*b); b->setClickingTogglesState(true); }
     addAndMakeVisible(audioBtn);
     audioBtn.onClick = [this]{ if (auto* q = processor.apvts.getParameter("listen")) { q->beginChangeGesture(); q->setValueNotifyingHost(0.0f); q->endChangeGesture(); } };
     addAndMakeVisible(thresholdBubble);
@@ -90,15 +90,18 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     powerA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"power",power);
     listenA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"listen",listenBtn);
     wideA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"full",modeBtn);
+    scA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(a,"sidechainHigh",scBtn);
     power.onStateChange=[this]{repaint();};
     listenBtn.onStateChange=[this]{ updateMonitorButtons(); };
     modeBtn.onStateChange=[this]{ updateMonitorButtons(); };
+    scBtn.onStateChange=[this]{ updateMonitorButtons(); };
     updateMonitorButtons();
 }
 void NFDeEsserAudioProcessorEditor::updateMonitorButtons()
 {
     audioBtn.setToggleState(!listenBtn.getToggleState(), juce::dontSendNotification);
     modeBtn.setLabel(modeBtn.getToggleState() ? "FULL" : "TARGET");
+    scBtn.setLabel(scBtn.getToggleState() ? "HIGH" : "BAND");
 }
 NFDeEsserAudioProcessorEditor::~NFDeEsserAudioProcessorEditor(){processor.apvts.state.removeListener(this);cancelPendingUpdate();setLookAndFeel(nullptr);}
 
@@ -251,19 +254,20 @@ void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
     g.setFont(juce::Font(juce::FontOptions(30.0f,juce::Font::bold)).withExtraKerningFactor(.08f));
     g.drawText("NF DE-ESSER",168,23,230,44,juce::Justification::centredLeft);
 
-    // Left column: dark inset panel with four sections (AUDIO mode, FREQUENCY knob, RANGE knob, MONITOR).
+    // Left column: dark inset panel with five sections (MODE, SIDE-CHAIN filter, RANGE knob, FREQUENCY knob, MONITOR).
     g.setColour(juce::Colour(0x38000000));
     g.fillRoundedRectangle(44.0f, 112.0f, 186.0f, 608.0f, 9.0f);
     g.setColour(juce::Colour(0x40ffffff));
     g.drawRoundedRectangle(44.0f, 112.0f, 186.0f, 608.0f, 9.0f, 1.0f);
-    for (float dy : { 208.0f, 408.0f, 608.0f }) g.drawLine(58.0f, dy, 216.0f, dy, 1.0f);
+    for (float dy : { 192.0f, 270.0f, 450.0f, 630.0f }) g.drawLine(58.0f, dy, 216.0f, dy, 1.0f);
     g.setColour(juce::Colours::white);g.setFont(juce::Font(juce::FontOptions(16.0f,juce::Font::bold)));
-    g.drawText("MODE",      juce::Rectangle<int>((int)kLeftX-70,122,140,22), juce::Justification::centred);
-    g.drawText("RANGE",     juce::Rectangle<int>((int)kLeftX-70,216,140,22), juce::Justification::centred);
-    g.drawText("FREQUENCY", juce::Rectangle<int>((int)kLeftX-70,416,140,22), juce::Justification::centred);
-    g.drawText("MONITOR",   juce::Rectangle<int>((int)kLeftX-70,616,140,22), juce::Justification::centred);
-    drawKnobScale(g,{kLeftX,kFreqKnobY},kKnobBox*0.5f+2.0f,"500","16k");
+    g.drawText("MODE",       juce::Rectangle<int>((int)kLeftX-80,120,160,22), juce::Justification::centred);
+    g.drawText("SIDE-CHAIN", juce::Rectangle<int>((int)kLeftX-80,198,160,22), juce::Justification::centred);
+    g.drawText("RANGE",      juce::Rectangle<int>((int)kLeftX-80,278,160,22), juce::Justification::centred);
+    g.drawText("FREQUENCY",  juce::Rectangle<int>((int)kLeftX-80,458,160,22), juce::Justification::centred);
+    g.drawText("MONITOR",    juce::Rectangle<int>((int)kLeftX-80,638,160,22), juce::Justification::centred);
     drawKnobScale(g,{kLeftX,kRangeKnobY},kKnobBox*0.5f+2.0f,"0","20");
+    drawKnobScale(g,{kLeftX,kFreqKnobY},kKnobBox*0.5f+2.0f,"500","16k");
 
     {   std::vector<FaderTick> t; for(int v=-40; v<=0; v+=5) t.push_back({(double)v, v%10==0 ? juce::String(v) : juce::String(), v%10==0}); drawFaderScale(g,thresholdKnob,kThresholdX,t); }
 
@@ -325,13 +329,14 @@ void NFDeEsserAudioProcessorEditor::resized()
     thresholdCap.setBounds(scaleBounds({kThresholdX-65.0f, 668.0f, 130.0f, 54.0f}));
 
     // left column
-    modeBtn.setBounds(scaleBounds({kLeftX-60.0f, 152.0f, 120.0f, 30.0f}));
-    freqKnob.setBounds(scaleBounds({kLeftX-kKnobBox*0.5f, kFreqKnobY-kKnobBox*0.5f, kKnobBox, kKnobBox}));
-    freqCap.setBounds(scaleBounds({kLeftX-52.0f, 560.0f, 104.0f, 43.0f}));
+    modeBtn.setBounds(scaleBounds({kLeftX-60.0f, 148.0f, 120.0f, 30.0f}));
+    scBtn.setBounds(scaleBounds({kLeftX-60.0f, 226.0f, 120.0f, 30.0f}));
     rangeKnob.setBounds(scaleBounds({kLeftX-kKnobBox*0.5f, kRangeKnobY-kKnobBox*0.5f, kKnobBox, kKnobBox}));
-    rangeCap.setBounds(scaleBounds({kLeftX-52.0f, 360.0f, 104.0f, 43.0f}));
-    audioBtn.setBounds(scaleBounds({kLeftX-60.0f, 644.0f, 120.0f, 30.0f}));
-    listenBtn.setBounds(scaleBounds({kLeftX-60.0f, 682.0f, 120.0f, 30.0f}));
+    rangeCap.setBounds(scaleBounds({kLeftX-52.0f, 402.0f, 104.0f, 43.0f}));
+    freqKnob.setBounds(scaleBounds({kLeftX-kKnobBox*0.5f, kFreqKnobY-kKnobBox*0.5f, kKnobBox, kKnobBox}));
+    freqCap.setBounds(scaleBounds({kLeftX-52.0f, 582.0f, 104.0f, 43.0f}));
+    audioBtn.setBounds(scaleBounds({kLeftX-83.0f, 668.0f, 80.0f, 30.0f}));
+    listenBtn.setBounds(scaleBounds({kLeftX+3.0f, 668.0f, 80.0f, 30.0f}));
 
     power.setBounds(scaleBounds({679.0f, 43.0f, 66.0f, 66.0f}));
     // meters span the same travel as the faders' thumbs, so the Threshold fader reads against the input meter

@@ -2,14 +2,15 @@
 
 Simple split-band de-esser by **NF Audio Tools** (Nenno Fernando) for vocals, drums and mixes. VST3, AU (macOS) and AAX (Pro Tools).
 
-Layout inspired by classic de-esser plug-ins, in the NF look (with a **black brushed-steel** chassis, the owner's choice for this plug-in):
-- **Left column:** **MODE** (**TARGET**: only the sibilance band is turned down, **FULL**: the whole signal is turned down), **RANGE** (0..20 dB: the most it will
-  ever turn down) and **FREQUENCY** (500 Hz - 16 kHz), both round knobs with a value box, and **MONITOR** (**AUDIO** / **LISTEN**: the side-chain monitor, it always plays the band the de-esser hears at Frequency (to find the "s"), whatever the Threshold is).
-- **Threshold** (-40..0 dB) is the only fader, with an input meter beside it (what the detector hears); then the **REDUCTION** meter (gain reduction)
-  and L / R output level meters. There is no output gain control.
-- Power and 12 factory presets (male / female / rock / pop / podcast / heavy voice, acoustic guitar, hi-hat, overheads, mix bus, master) plus save/load.
-
-Look-ahead of 1.5 ms (reported to the host as latency, also with Power off) so the reduction is already in place when an "s" starts.
+Built like the classic de-essers (Waves DeEsser, Avid De-Esser III), in the NF look with a **black brushed-steel** chassis (the owner's choice for this plug-in).
+- **MODE:** **TARGET** (Split: the audio is split at Frequency and only the HIGH part is turned down, the low part is never touched) or **FULL** (the whole signal is turned down).
+- **SIDE-CHAIN:** **HIGH** (default: the detector looks at everything above Frequency, good for voices with several kinds of "s") or **BAND** (a narrow band around Frequency, isolates one kind of "s").
+- **RANGE** (0..20 dB: the most it will ever turn down) and **FREQUENCY** (500 Hz - 16 kHz): round knobs with a value box.
+- **MONITOR:** **AUDIO** or **LISTEN**, the side-chain monitor: it always plays what the side-chain hears (to find the "s"), whatever the Threshold is.
+- **THRESHOLD** (-40..0 dB) is the only fader, with an input meter beside it (the energy of the side-chain, same scale); then the **REDUCTION** meter and L / R output level meters.
+  There is no output gain control. The Threshold scale is calibrated so an "s" reads in the upper-middle of the scale.
+- Power and 13 factory presets (voices male / female, "s" and "sh", wide, rock, podcast, acoustic guitar, hi-hat, overheads, mix bus, master) plus save/load.
+- Look-ahead of 1.5 ms (reported to the host as latency, also with Power off) so the reduction is already in place when an "s" starts.
 
 ![preview](Docs/preview.png)
 
