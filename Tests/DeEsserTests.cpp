@@ -243,6 +243,20 @@ int main()
         assert(redInstr > 3.0);
         assert(redSVoice > 3.0 && redSInstr > 3.0);
     }
+    // Turning Frequency must not click: a steady 3 kHz tone in Listen while the cutoff steps through it (100 Hz every 40 ms).
+    for (bool high : { true, false })
+    {
+        DeEsser d; d.prepare(sr); Parameters q; q.listen = true; q.highPass = high; q.freqHz = 800.0; d.setParameters(q);
+        std::vector<double> y;
+        for (int i = 0; i < (int)(sr * 3.0); ++i)
+        {
+            if (i % 1920 == 0) { q.freqHz = std::min(5000.0, 800.0 + 100.0 * (i / 1920)); d.setParameters(q); }
+            float l = (float)(0.2 * std::sin(2.0 * kPi * 3000.0 * i / sr)), r = l; d.processSample(l, r); y.push_back(l);
+        }
+        std::vector<double> pk; for (size_t i = 7000; i + 16 < y.size(); i += 16) { double m = 0; for (int k = 0; k < 16; ++k) m = std::max(m, std::abs(y[i + k])); pk.push_back(m); }
+        double worstDev = 0; for (size_t i = 2; i + 2 < pk.size(); ++i) { const double nb = 0.5 * (pk[i - 2] + pk[i + 2]); worstDev = std::max(worstDev, std::abs(pk[i] - nb) / nb); }
+        assert(worstDev < 0.02);
+    }
     // Factory presets: unique names, every value inside its control's range, "Default" first.
     assert(kNumFactoryPresets >= 10 && std::strcmp(kFactoryPresets[0].name, "Default") == 0);
     for (int i = 0; i < kNumFactoryPresets; ++i)

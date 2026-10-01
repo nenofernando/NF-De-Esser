@@ -51,13 +51,14 @@ public:
     {
         sr = sampleRate;
         attackCoef = std::exp(-1.0 / (0.0004 * sr));    // 0.4 ms
+        glideCoef = 1.0 - std::exp(-16.0 / (0.012 * sr));
         sustainCoef = std::exp(-1.0 / (0.001 * kSustainMs * sr));
         gateCloseCoef = std::exp(-1.0 / (0.001 * kGateCloseMs * sr));
         releaseCoef = std::exp(-1.0 / (0.018 * sr));    // 18 ms: the next vowel is not left dull
         lookAhead = (int) std::lround(kLookAheadMs * 0.001 * sr);
         for (auto& d : delay) d.assign((size_t) std::max(lookAhead, 1), 0.0);   // read-then-write ring: the delay is exactly its size
         reset();
-        filterFreq = -1.0;
+        filterFreq = -1.0; freqCur = params.freqHz;
         updateFilter();
     }
     // Delay (samples) between the input and the audio: report it to the host as latency.
@@ -77,7 +78,7 @@ public:
         params = p;
         params.freqHz = std::min(std::min(kMaxFreqHz, 0.45 * sr), std::max(kMinFreqHz, params.freqHz));
         params.rangeDb = std::min(kMaxRangeDb, std::max(0.0, params.rangeDb));
-        if (std::abs(params.freqHz - filterFreq) > 0.5) updateFilter();
+        if (filterFreq < 0.0) { freqCur = params.freqHz; updateFilter(); }   // first call: no glide
     }
 
     // Power off: the untouched input, with the same delay so switching Power never shifts the timing.
@@ -92,6 +93,14 @@ public:
     void processSample(float& left, float& right)
     {
         const double xl = left, xr = right;
+
+        // Frequency glides (about 12 ms) instead of jumping, so turning the knob never clicks, least of all in Listen
+        if ((++glideCount & 15) == 0 && std::abs(params.freqHz - freqCur) > 0.01)
+        {
+            freqCur += (params.freqHz - freqCur) * glideCoef;
+            if (std::abs(params.freqHz - freqCur) < 0.5) freqCur = params.freqHz;
+            updateFilter();
+        }
 
         // ---- side-chain: the filtered CURRENT input ----
         double sl, sr_;
@@ -204,7 +213,7 @@ private:
 
     void updateFilter()
     {
-        const double w0 = 2.0 * 3.14159265358979323846 * params.freqHz / sr;
+        const double w0 = 2.0 * 3.14159265358979323846 * freqCur / sr;
         const double wx = w0 * kCrossRatio;
         constexpr double Qbw = 0.70710678118654752;   // Butterworth: two identical stages = Linkwitz-Riley 4th order
         for (int c = 0; c < 2; ++c)
@@ -215,10 +224,11 @@ private:
             lo1[c].setLowpass(wx, Qbw);  lo2[c].setLowpass(wx, Qbw);     // crossover, low part
             hi1[c].setHighpass(wx, Qbw); hi2[c].setHighpass(wx, Qbw);    // crossover, high part
         }
-        filterFreq = params.freqHz;
+        filterFreq = freqCur;
     }
 
-    double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, bodyEnv = 0.0, gateSmooth = 0.0, sustainDb = 0.0, smoothDb = 0.0, sustainCoef = 0.0, gateCloseCoef = 0.0, reductionDb = 0.0, filterFreq = -1.0;
+    double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, bodyEnv = 0.0, gateSmooth = 0.0, sustainDb = 0.0, smoothDb = 0.0, sustainCoef = 0.0, gateCloseCoef = 0.0, reductionDb = 0.0, filterFreq = -1.0, freqCur = 6500.0, glideCoef = 0.1;
+    unsigned glideCount = 0;
     int lookAhead = 0;
     size_t pos = 0;
     Parameters params;
