@@ -86,6 +86,23 @@ int main()
         assert(toneDb(y, 6500.0, sr) > -11.0);
         assert(toneDb(y, 200.0, sr) < -40.0);
     }
+    // Wide mode turns the WHOLE signal down (the low tone follows the reduction), Split leaves it alone.
+    {
+        Parameters q = p; q.wide = true;
+        double red = 0.0;
+        auto y = run(q, 200.0, -20.0, 6500.0, -12.0, sr, 1.0, &red);
+        assert(red > 6.0);
+        assert(std::abs(toneDb(y, 200.0, sr) - (-20.0 - red)) < 0.6);
+        // below the threshold Wide is transparent too
+        auto z = run(q, 200.0, -30.0, 6500.0, -60.0, sr, 1.0);
+        assert(std::abs(toneDb(z, 200.0, sr) - (-30.0)) < 0.2);
+    }
+    // Detector level follows the band level.
+    {
+        DeEsser d; d.prepare(sr); d.setParameters(p);
+        for (int i = 0; i < (int)(sr * 0.5); ++i) { float l = (float)(0.1 * std::sin(2.0 * kPi * 6500.0 * i / sr)), r = l; d.processSample(l, r); }
+        assert(d.detectorLevelDb() > -22.0 && d.detectorLevelDb() < -12.0);   // 0.1 peak = -20 dBFS, envelope reads a bit under/over
+    }
     // Stability: loud noise at every frequency setting stays finite and bounded, reduction never above Range.
     {
         for (double f : { 2000.0, 5000.0, 12000.0 })

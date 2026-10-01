@@ -11,6 +11,7 @@ NFDeEsserAudioProcessor::NFDeEsserAudioProcessor()
     rangeParam = apvts.getRawParameterValue("range");
     outputGainParam = apvts.getRawParameterValue("outputGain");
     listenParam = apvts.getRawParameterValue("listen");
+    wideParam = apvts.getRawParameterValue("wide");
     powerParam = apvts.getRawParameterValue("power");
 }
 
@@ -28,6 +29,17 @@ bool NFDeEsserAudioProcessor::isBusesLayoutSupported(const BusesLayout& l) const
     return (in==juce::AudioChannelSet::mono()||in==juce::AudioChannelSet::stereo())&&in==out;
 }
 
+// Peak of each output channel in dB (the editor's meters smooth it).
+void NFDeEsserAudioProcessor::measureOutput(const juce::AudioBuffer<float>& buffer)
+{
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        const int src = std::min(ch, buffer.getNumChannels() - 1);
+        const float peak = src >= 0 ? buffer.getMagnitude(src, 0, buffer.getNumSamples()) : 0.0f;
+        outputLevelDb[ch].store(juce::Decibels::gainToDecibels(peak, -100.0f));
+    }
+}
+
 void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals guard;
@@ -36,7 +48,7 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
 
     // Power off = the untouched input (no latency, so nothing to compensate).
     const bool powered = powerParam->load() > 0.5f;
-    if (!powered) { if (wasPowered) deEsser.reset(); wasPowered = false; gainReductionDb.store(0.0f); return; }
+    if (!powered) { if (wasPowered) deEsser.reset(); wasPowered = false; gainReductionDb.store(0.0f); detectorLevelDb.store(-100.0f); measureOutput(buffer); return; }
     wasPowered = true;
 
     nfdeesser::Parameters p;
@@ -44,6 +56,7 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
     p.thresholdDb = thresholdParam->load();
     p.rangeDb = rangeParam->load();
     p.listen = listenParam->load() > 0.5f;
+    p.wide = wideParam->load() > 0.5f;
     deEsser.setParameters(p);
 
     const int numCh = std::min(2, buffer.getNumChannels());
@@ -60,6 +73,8 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
         if (r != nullptr) r[n] = right * gain;
     }
     gainReductionDb.store((float) deEsser.gainReductionDb());
+    detectorLevelDb.store((float) deEsser.detectorLevelDb());
+    measureOutput(buffer);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout NFDeEsserAudioProcessor::createParameters()
@@ -74,6 +89,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NFDeEsserAudioProcessor::cre
     p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"range",1},"Range",juce::NormalisableRange<float>(0.0f,(float) nfdeesser::kMaxRangeDb,0.5f),8.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"listen",1},"Listen",false));
+    p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"wide",1},"Wide band",false));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"power",1},"Power",true));
     p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"outputGain",1},"Output",juce::NormalisableRange<float>(-12.0f,12.0f,0.1f),0.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));

@@ -28,11 +28,14 @@ public:
     juce::AudioProcessorValueTreeState apvts;
     // Current gain reduction in dB (>= 0), read by the editor's meter.
     std::atomic<float> gainReductionDb { 0.0f };
+    // Levels in dB for the meters: what the detector hears (input meter beside the Threshold fader) and the output peaks (L / R).
+    std::atomic<float> detectorLevelDb { -100.0f }, outputLevelDb[2] { { -100.0f }, { -100.0f } };
 
 private:
+    void measureOutput(const juce::AudioBuffer<float>&);
     nfdeesser::DeEsser deEsser;
     std::atomic<float> *freqParam = nullptr, *thresholdParam = nullptr, *rangeParam = nullptr,
-                       *outputGainParam = nullptr, *listenParam = nullptr, *powerParam = nullptr;
+                       *outputGainParam = nullptr, *listenParam = nullptr, *wideParam = nullptr, *powerParam = nullptr;
     juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> outputGainLinear;
     bool wasPowered = true;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NFDeEsserAudioProcessor)

@@ -6,7 +6,8 @@
 //   band  = bandpass(x, freq)                      (unity gain at the centre)
 //   level = envelope of max(|bandL|, |bandR|)      (stereo linked)
 //   red   = soft-knee reduction above Threshold, never more than Range
-//   y     = x + (g - 1) * band,   g = 10^(-red/20)
+//   Split (default): y = x + (g - 1) * band,   g = 10^(-red/20)   -> only the band is turned down
+//   Wide:            y = x * g                                      -> the whole signal is turned down (same detector)
 // Listen outputs the band itself (what the detector hears).
 #include <algorithm>
 #include <cmath>
@@ -22,6 +23,7 @@ struct Parameters
     double thresholdDb = -20.0;
     double rangeDb = 8.0;     // maximum reduction
     bool listen = false;
+    bool wide = false;        // false = Split (only the band), true = Wide (whole signal)
 };
 
 class DeEsser
@@ -69,11 +71,14 @@ public:
         if (params.listen) { left = (float) bl; right = (float) br; return; }
 
         const double g = std::pow(10.0, -reductionDb / 20.0);
+        if (params.wide) { left = (float) (xl * g); right = (float) (xr * g); return; }
         left = (float) (xl + (g - 1.0) * bl);
         right = (float) (xr + (g - 1.0) * br);
     }
 
     double gainReductionDb() const { return reductionDb; }
+    // Level the detector hears (dB, band-passed, smoothed): drives the input meter next to the Threshold fader.
+    double detectorLevelDb() const { return 20.0 * std::log10(env + 1.0e-9); }
 
 private:
     struct Biquad

@@ -48,14 +48,15 @@ private:
     float shown = 0.0f, lastPainted = -1.0f;
 };
 
-// "LISTEN" toggle next to the Frequency capsule: plays only the band the detector hears.
-class NFDeEsserListenButton final:public juce::ToggleButton
+// Cream push-button that lights amber when on (AUDIO / LISTEN / SPLIT-WIDE in the left column). The text can change with the state.
+class NFDeEsserToggleButton final:public juce::ToggleButton
 {
 public:
-    NFDeEsserListenButton(){ setMouseCursor(juce::MouseCursor::PointingHandCursor); }
+    explicit NFDeEsserToggleButton(const juce::String& label):text(label){ setMouseCursor(juce::MouseCursor::PointingHandCursor); }
+    void setLabel(const juce::String& t){ if (t != text) { text = t; repaint(); } }
     void paintButton(juce::Graphics& g,bool over,bool) override
     {
-        const float s = (float)getWidth() / 60.0f;
+        const float s = (float)getHeight() / 30.0f;
         auto r = getLocalBounds().toFloat().reduced(1.0f*s);
         const bool on = getToggleState();
         g.setColour(juce::Colour(0x50000000));
@@ -66,9 +67,50 @@ public:
         g.setColour(juce::Colour(0xff111511));
         g.drawRoundedRectangle(r, 7.0f*s, 1.6f*s);
         g.setColour(juce::Colour(0xff101510));
-        g.setFont(juce::Font(juce::FontOptions(11.5f*s,juce::Font::bold)));
-        g.drawText("LISTEN", r, juce::Justification::centred);
+        g.setFont(juce::Font(juce::FontOptions(13.5f*s,juce::Font::bold)));
+        g.drawText(text, r, juce::Justification::centred);
     }
+private:
+    juce::String text;
+};
+
+// Vertical LED level meter filling its whole box: minDb at the bottom, maxDb at the top (input meter beside the Threshold fader, output L / R).
+class NFDeEsserLevelMeter final:public juce::Component, private juce::Timer
+{
+public:
+    NFDeEsserLevelMeter(std::atomic<float>& source,float minDb_,float maxDb_,int segments):src(source),minDb(minDb_),maxDb(maxDb_),numSeg(segments)
+    { setInterceptsMouseClicks(false,false); startTimerHz(30); shown = minDb_; }
+    void paint(juce::Graphics& g) override
+    {
+        const float s = (float)getWidth() / 24.0f;
+        auto b = getLocalBounds().toFloat();
+        g.setColour(juce::Colour(0x50000000));
+        g.fillRoundedRectangle(b.translated(0.0f,2.0f*s), 5.0f*s);
+        g.setColour(juce::Colour(0xff0d130f));
+        g.fillRoundedRectangle(b, 5.0f*s);
+        const auto inner = b.reduced(3.0f*s);
+        const float segH = inner.getHeight() / (float)numSeg;
+        for (int i=0;i<numSeg;++i)
+        {
+            const float lowDb = minDb + (maxDb-minDb) * (float)i / (float)numSeg;
+            const bool lit = shown > lowDb + 0.05f;
+            const bool hot = i >= numSeg - juce::jmax(2, numSeg/5);
+            juce::Rectangle<float> seg(inner.getX(), inner.getBottom() - (float)(i+1)*segH + 1.0f*s, inner.getWidth(), segH - 2.0f*s);
+            g.setColour(lit ? (hot ? juce::Colour(0xffe8863a) : juce::Colour(0xffffdd7a)) : juce::Colour(0xff222c25));
+            g.fillRoundedRectangle(seg, 1.4f*s);
+            if (lit){ g.setColour(juce::Colours::white.withAlpha(0.3f)); g.fillRoundedRectangle(seg.reduced(1.2f*s).removeFromTop(seg.getHeight()*0.35f), 1.0f*s); }
+        }
+    }
+private:
+    void timerCallback() override
+    {
+        const float target = juce::jlimit(minDb, maxDb, src.load());
+        shown = target > shown ? target : shown + (target - shown) * 0.2f;   // fast attack, slower fall
+        if (std::abs(shown - lastPainted) > 0.2f) { lastPainted = shown; repaint(); }
+    }
+    std::atomic<float>& src;
+    float minDb, maxDb, shown, lastPainted = 1000.0f;
+    int numSeg;
 };
 
 class NFDeEsserPowerButton final:public juce::ToggleButton
@@ -192,9 +234,8 @@ public:
     ~NFDeEsserAudioProcessorEditor() override;
     void paint(juce::Graphics&) override;void resized() override;
 private:
-    struct Tick { float deg; juce::String label; bool major; float fontSize; float labelOffset = 29.0f; };
-    void drawScale(juce::Graphics&,juce::Point<float> centre,const std::vector<Tick>&);
     struct FaderTick { double value; juce::String label; bool major; };
+    void updateMonitorButtons();
     void drawFaderScale(juce::Graphics&,juce::Slider&,float centreX,const std::vector<FaderTick>&);
     juce::Rectangle<int> scaleBounds(juce::Rectangle<float> baseBounds) const;
     // the preset name lives in the plug-in state; refresh the tab whenever it changes (may come from a non-message thread)
@@ -214,14 +255,15 @@ private:
     NFDeEsserPresetBar presetBar;
     NFDeEsserLogoButton logoButton;
     std::unique_ptr<juce::FileChooser> presetFileChooser;
-    juce::Slider freqKnob,thresholdKnob,rangeKnob,outputKnob;
-    NFDeEsserGainBubble outputBubble,freqBubble,thresholdBubble,rangeBubble;
-    NFDeEsserGainReductionMeter grMeter;
+    juce::Slider thresholdKnob,rangeKnob,outputKnob;   // the three vertical faders
+    NFDeEsserGainBubble outputBubble,thresholdBubble,rangeBubble;
+    NFDeEsserGainReductionMeter grMeter;   // ATTEN
+    NFDeEsserLevelMeter inputMeter, outLMeter, outRMeter;
     ValueCapsule freqCap,thresholdCap,rangeCap,outputCap;
     NFDeEsserPowerButton power;
-    NFDeEsserListenButton listenBtn;
+    NFDeEsserToggleButton modeBtn{"SPLIT"}, audioBtn{"AUDIO"}, listenBtn{"LISTEN"};
     using SA=juce::AudioProcessorValueTreeState::SliderAttachment;
-    std::unique_ptr<SA> freqA,thresholdA,rangeA,outputGainA,outputCapA,freqCapA,thresholdCapA,rangeCapA;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> powerA,listenA;
+    std::unique_ptr<SA> thresholdA,rangeA,outputGainA,outputCapA,freqCapA,thresholdCapA,rangeCapA;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> powerA,listenA,wideA;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NFDeEsserAudioProcessorEditor)
 };
