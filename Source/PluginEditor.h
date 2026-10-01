@@ -186,7 +186,7 @@ private:
     juce::String name { "Default" };
 };
 
-// Temporary floating value readout over the OUTPUT fader while it is being moved.
+// Temporary floating value readout over the Threshold fader while it is being moved.
 class NFDeEsserGainBubble final:public juce::Component, private juce::Timer
 {
 public:
@@ -255,15 +255,15 @@ private:
     NFDeEsserPresetBar presetBar;
     NFDeEsserLogoButton logoButton;
     std::unique_ptr<juce::FileChooser> presetFileChooser;
-    juce::Slider thresholdKnob,rangeKnob,outputKnob;   // the three vertical faders
-    NFDeEsserGainBubble outputBubble,thresholdBubble,rangeBubble;
+    juce::Slider thresholdKnob;   // the only fader: Threshold
+    NFDeEsserGainBubble thresholdBubble;
     NFDeEsserGainReductionMeter grMeter;   // ATTEN
     NFDeEsserLevelMeter inputMeter, outLMeter, outRMeter;
-    ValueCapsule freqCap,thresholdCap,rangeCap,outputCap;
+    ValueCapsule freqCap,thresholdCap,rangeCap;
     NFDeEsserPowerButton power;
     NFDeEsserToggleButton modeBtn{"SPLIT"}, audioBtn{"AUDIO"}, listenBtn{"LISTEN"};
     using SA=juce::AudioProcessorValueTreeState::SliderAttachment;
-    std::unique_ptr<SA> thresholdA,rangeA,outputGainA,outputCapA,freqCapA,thresholdCapA,rangeCapA;
+    std::unique_ptr<SA> thresholdA,freqCapA,thresholdCapA,rangeCapA;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> powerA,listenA,wideA;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NFDeEsserAudioProcessorEditor)
 };

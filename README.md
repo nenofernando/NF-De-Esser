@@ -5,8 +5,9 @@ Simple split-band de-esser by **NF Audio Tools** (Nenno Fernando) for vocals, dr
 Layout inspired by classic de-esser plug-ins, in the NF green look:
 - **Left column:** **AUDIO** mode (**SPLIT**: only the sibilance band is turned down, **WIDE**: the whole signal is turned down), **FREQUENCY** (2-12 kHz,
   drag the value box) and **MONITOR** (**AUDIO** / **LISTEN**: Listen plays only the band the de-esser hears, to find the "s").
-- **Faders:** **Threshold** (-40..0 dB) with an input meter beside it (what the detector hears), **Range** (0..20 dB: the most it will ever turn down),
-  the **ATTEN** meter (gain reduction) and **Output** (-12..+12 dB) with its L / R level meters.
+- **Range** (0..20 dB: the most it will ever turn down) is a drag value box in the left column, like Frequency.
+- **Threshold** (-40..0 dB) is the only fader, with an input meter beside it (what the detector hears); then the **ATTEN** meter (gain reduction)
+  and L / R output level meters. There is no output gain control.
 - Power and 11 factory presets (male / female / rock / pop / podcast / heavy voice, acoustic guitar, hi-hat, overheads, mix bus, master) plus save/load.
 
 No latency.

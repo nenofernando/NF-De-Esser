@@ -28,7 +28,6 @@ void PresetManager::applyFactoryPreset(juce::AudioProcessorValueTreeState& apvts
     setParamValue(apvts, "freq", f.freqHz);
     setParamValue(apvts, "threshold", f.thresholdDb);
     setParamValue(apvts, "range", f.rangeDb);
-    setParamValue(apvts, "outputGain", f.outputDb);
     setParamValue(apvts, "listen", 0.0f);
     setParamValue(apvts, "wide", 0.0f);
     setParamValue(apvts, "power", 1.0f);

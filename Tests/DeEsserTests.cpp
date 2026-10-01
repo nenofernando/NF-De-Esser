@@ -136,7 +136,6 @@ int main()
         assert(f.freqHz >= kMinFreqHz && f.freqHz <= kMaxFreqHz);
         assert(f.thresholdDb >= -40.0f && f.thresholdDb <= 0.0f);
         assert(f.rangeDb >= 0.0f && f.rangeDb <= (float) kMaxRangeDb);
-        assert(f.outputDb >= -12.0f && f.outputDb <= 12.0f);
         for (int j = i + 1; j < kNumFactoryPresets; ++j) assert(std::strcmp(f.name, kFactoryPresets[j].name) != 0);
     }
     std::cout << "NF De-Esser DSP tests passed\n";
