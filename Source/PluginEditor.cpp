@@ -32,7 +32,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     :AudioProcessorEditor(&p),processor(p),grMeter(p.gainReductionDb),
      inputMeter(p.detectorLevelDb,-40.0f,0.0f,24),outLMeter(p.outputLevelDb[0],-30.0f,0.0f,20),outRMeter(p.outputLevelDb[1],-30.0f,0.0f,20),
      freqCap("2-12 kHz",6500.0,false,formatFreq),thresholdCap("-40 to 0 dB",-20.0,true,formatDb),
-     rangeCap("0 to 20 dB",8.0,false,formatRange)
+     rangeCap("0 to 20 dB",12.0,false,formatRange)
 {
     setLookAndFeel(&look);
     setResizable(true,true);
@@ -68,7 +68,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
         k.s->setScrollWheelEnabled(true);
         k.s->setDoubleClickReturnValue(true,k.def);
     }
-    for(auto k:{K{&freqKnob,6500.0},K{&rangeKnob,8.0}}){
+    for(auto k:{K{&freqKnob,6500.0},K{&rangeKnob,12.0}}){
         addAndMakeVisible(*k.s);
         k.s->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         k.s->setRotaryParameters(juce::MathConstants<float>::pi*1.25f, juce::MathConstants<float>::pi*2.75f, true);   // 270-degree sweep, same as the family

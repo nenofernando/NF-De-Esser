@@ -129,7 +129,7 @@ int main()
             if (i > n / 2) { in2 += x * x; out2 += (double) l * l; red += d.gainReductionDb(); ++cnt; }
         }
         const double real = -10.0 * std::log10(out2 / in2), meter = red / cnt;
-        assert(meter > 7.0 && real > 0.55 * meter);   // at least about 55% of the meter shows up in the actual sibilance
+        assert(meter > 7.0 && real > 0.65 * meter);   // most of what the meter shows is really heard on the sibilance
         auto y = run(p, 1000.0, -20.0, 6500.0, -12.0, sr, 1.0);
         assert(std::abs(toneDb(y, 1000.0, sr) - (-20.0)) < 0.5);   // body of the voice untouched during reduction
     }

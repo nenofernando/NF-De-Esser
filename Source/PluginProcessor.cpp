@@ -80,7 +80,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NFDeEsserAudioProcessor::cre
         juce::AudioParameterFloatAttributes().withLabel("Hz")));
     p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"threshold",1},"Threshold",juce::NormalisableRange<float>(-40.0f,0.0f,1.0f),-20.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
-    p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"range",1},"Range",juce::NormalisableRange<float>(0.0f,(float) nfdeesser::kMaxRangeDb,0.5f),8.0f,
+    p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"range",1},"Range",juce::NormalisableRange<float>(0.0f,(float) nfdeesser::kMaxRangeDb,0.5f),12.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"listen",1},"Listen",false));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"full",1},"Full band",false));

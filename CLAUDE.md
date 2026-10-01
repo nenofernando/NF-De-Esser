@@ -31,10 +31,10 @@ After a bump, grep for the old version to catch anything missed:
 - DSP is JUCE-free in `Source/DSP/DeEsser.h` and covered by `Tests/DeEsserTests.cpp`.
 - Detector + Listen: a 4th-order band-pass at Frequency (two cascaded RBJ stages, Q 1.8 each; -43 dB at 1 kHz for a 6.5 kHz band, so Listen does not bring the
   body of the voice - the owner compared it with other de-essers). Stereo-linked peak envelope (0.4 ms attack / 40 ms release), soft knee 6 dB,
-  effective ratio 4:1, reduction never above Range (the amount at the centre frequency).
-- What is turned down (TARGET mode): `y = x + (g-1) * wideBand`, where wideBand is a WIDER 2nd-order band-pass (Q 0.65, `kApplyQ`). With the narrow band
+  effective ratio 10:1 (`kSlope` 0.9: the owner wants Threshold to bite like other de-essers), reduction never above Range (default 12 dB) (the amount at the centre frequency).
+- What is turned down (TARGET mode): `y = x + (g-1) * wideBand`, where wideBand is a WIDER 2nd-order band-pass (Q 0.5, `kApplyQ`). With the narrow band
   alone the meter showed 8 dB but the real sibilance only dropped 0.7 dB (the owner reported "no difference when I move Threshold"). Measured now: 8 dB at the
-  centre = about 5.4 dB on a 4-10 kHz "sss", while 1 kHz stays untouched (tests cover both). FULL mode: `y = x * g`. Listen outputs the narrow band.
+  centre = about 6 dB on a 4-10 kHz "sss", while 1 kHz stays untouched (tests cover both). FULL mode: `y = x * g`. Listen outputs the narrow band.
   Power off = untouched input. No latency, no oversampling.
 - Parameters: `freq` 2-12 kHz (centre 5 kHz), `threshold`, `range`, `listen`, `full` (false = TARGET, only the band; true = FULL, whole signal; the DSP field is still called `wide`), `power`. The processor publishes `gainReductionDb`, `detectorLevelDb` and `outputLevelDb[2]` for the meters.
 - No licence system yet (NF Q3 has one); decide before selling.

@@ -4,7 +4,7 @@
 // Split-band de-esser. Two band-passes around the chosen frequency:
 //   band  = narrow 4th-order band-pass (two cascaded 2nd-order stages): the DETECTOR and the Listen monitor, so the voice body
 //           never reaches the detector and Listen plays only the "s"
-//   wideBand = wider 2nd-order band-pass (Q 0.65): the part that is TURNED DOWN, so the whole sibilance region (not only a thin slice
+//   wideBand = wider 2nd-order band-pass (Q 0.5): the part that is TURNED DOWN, so the whole sibilance region (not only a thin slice
 //           around the centre) is reduced and the effect is clearly audible
 //   level = envelope of max(|bandL|, |bandR|)      (stereo linked)
 //   red   = soft-knee reduction above Threshold, never more than Range (the amount at the centre frequency)
@@ -18,7 +18,8 @@ namespace nfdeesser
 {
 inline constexpr double kMinFreqHz = 2000.0, kMaxFreqHz = 12000.0;
 inline constexpr double kMaxRangeDb = 20.0;
-inline constexpr double kApplyQ = 0.65;   // Q of the band that is turned down (lower = wider)
+inline constexpr double kApplyQ = 0.5;    // Q of the band that is turned down (lower = wider)
+inline constexpr double kSlope = 0.9;     // 1 - 1/ratio: 10:1
 
 struct Parameters
 {
@@ -67,12 +68,12 @@ public:
                           : releaseCoef * env + (1.0 - releaseCoef) * level;
         const double envDb = 20.0 * std::log10(env + 1.0e-9);
 
-        // gain computer: soft knee (6 dB), ratio 4:1 on the part above the threshold, limited by Range
+        // gain computer: soft knee (6 dB), ratio 10:1 on the part above the threshold (it bites: lowering Threshold squeezes the "s" hard), limited by Range
         const double over = envDb - params.thresholdDb;
         double kneed = 0.0;
         if (over >= 3.0) kneed = over;
         else if (over > -3.0) kneed = (over + 3.0) * (over + 3.0) / 12.0;
-        reductionDb = std::min(params.rangeDb, kneed * 0.75);
+        reductionDb = std::min(params.rangeDb, kneed * kSlope);
 
         if (params.listen) { left = (float) bl; right = (float) br; return; }
 
@@ -111,7 +112,7 @@ private:
             f.b0 = alpha / a0; f.b1 = 0.0; f.b2 = -alpha / a0;
             f.a1 = -2.0 * cw / a0; f.a2 = (1.0 - alpha) / a0;
         }
-        // the wider band that is turned down (Q 0.65, 2nd order)
+        // the wider band that is turned down (Q 0.5, 2nd order)
         constexpr double Qa = kApplyQ;
         const double alphaA = std::sin(w0) / (2.0 * Qa), a0a = 1.0 + alphaA;
         for (auto& f : ap)
