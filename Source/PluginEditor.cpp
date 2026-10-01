@@ -252,10 +252,10 @@ void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
 
     g.setColour(juce::Colour(0xffeef2ee));
     { static const juce::Image nfLogo=readyAsset(NFDeEsserBinaryData::_10_logo_nf_audio_tools_png,NFDeEsserBinaryData::_10_logo_nf_audio_tools_pngSize);
-      if(nfLogo.isValid()) g.drawImage(nfLogo,juce::Rectangle<float>(42.0f,3.0f,108.0f,62.0f),juce::RectanglePlacement::centred); }
-    g.drawLine(148.0f,14.0f,148.0f,45.0f,2.0f);
+      if(nfLogo.isValid()) g.drawImage(nfLogo,juce::Rectangle<float>(42.0f,17.0f,108.0f,62.0f),juce::RectanglePlacement::centred); }
+    g.drawLine(148.0f,28.0f,148.0f,59.0f,2.0f);
     g.setFont(juce::Font(juce::FontOptions(30.0f,juce::Font::bold)).withExtraKerningFactor(.08f));
-    g.drawText("NF DE-ESSER",168,9,230,44,juce::Justification::centredLeft);
+    g.drawText("NF DE-ESSER",168,23,230,44,juce::Justification::centredLeft);
 
     // Left column: dark inset panel with four sections (AUDIO mode, FREQUENCY knob, RANGE knob, MONITOR).
     g.setColour(juce::Colour(0x38000000));
@@ -347,7 +347,7 @@ void NFDeEsserAudioProcessorEditor::resized()
     outRMeter.setBounds(scaleBounds({kOutRX, mTop, 24.0f, mH}));
     // ATTEN: the bar (14px into the 80px box) is centred on kAttenX
     grMeter.setBounds(scaleBounds({kAttenX-27.0f, 112.0f, 80.0f, 500.0f}));
-    logoButton.setBounds(scaleBounds({42.0f, 3.0f, 108.0f, 62.0f}));
+    logoButton.setBounds(scaleBounds({42.0f, 17.0f, 108.0f, 62.0f}));
     thresholdBubble.setBounds(scaleBounds({kThresholdX-38.0f, 84.0f, 76.0f, 24.0f}));
     menuButton.setBounds(scaleBounds({612.0f, 25.0f, 34.0f, 28.0f}));
     presetBar.setBounds(scaleBounds({439.0f, 28.0f, 157.0f, 21.0f}));
