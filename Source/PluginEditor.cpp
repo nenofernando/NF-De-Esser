@@ -14,7 +14,7 @@ juce::Image readyAsset(const char* data, int size) { return juce::ImageCache::ge
 constexpr int kDefaultSize = 540;   // 800 x 800 base shown at 0.675, the same text scale as the 810 x 270 plug-ins
 constexpr float kThresholdX = 290.0f, kRangeX = 430.0f, kOutputX = 625.0f, kAttenX = 510.0f;
 constexpr float kFaderW = 56.0f, kFaderY = 112.0f, kFaderH = 500.0f;   // vertical fader box (base units)
-constexpr float kThumbMargin = 13.44f;                                   // fader thumb travel margin (0.24 * width): the meters span the same range
+constexpr float kThumbMargin = 28.0f;                                    // fader thumb travel margin (half the cap height, 0.5 * width): the meters span the same range
 constexpr float kLeftX = 127.0f;                                         // centre of the left column
 
 juce::String formatOut(double v){ auto s=juce::String(v,1); if(v>0.05) s="+"+s; else if(v>-0.05) s="0.0"; return s+" dB"; }
