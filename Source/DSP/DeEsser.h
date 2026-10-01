@@ -39,7 +39,7 @@ public:
     {
         sr = sampleRate;
         attackCoef = std::exp(-1.0 / (0.0004 * sr));    // 0.4 ms
-        releaseCoef = std::exp(-1.0 / (0.040 * sr));    // 40 ms
+        releaseCoef = std::exp(-1.0 / (0.018 * sr));    // 18 ms: the next vowel is not left dull
         reset();
         updateFilter();
     }
