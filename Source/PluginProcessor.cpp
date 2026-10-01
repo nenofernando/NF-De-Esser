@@ -17,6 +17,7 @@ NFDeEsserAudioProcessor::NFDeEsserAudioProcessor()
 void NFDeEsserAudioProcessor::prepareToPlay(double sr,int)
 {
     deEsser.prepare(sr);
+    setLatencySamples(deEsser.latencySamples());   // look-ahead: reported to the host
     wasPowered = true;
 }
 
@@ -43,7 +44,26 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
 
     // Power off = the untouched input (no latency, so nothing to compensate).
     const bool powered = powerParam->load() > 0.5f;
-    if (!powered) { if (wasPowered) deEsser.reset(); wasPowered = false; gainReductionDb.store(0.0f); detectorLevelDb.store(-100.0f); measureOutput(buffer); return; }
+    if (!powered)   // Power off: the untouched input, with the same delay so the timing never jumps
+    {
+        if (wasPowered) deEsser.reset();
+        wasPowered = false;
+        const int ch = std::min(2, buffer.getNumChannels());
+        if (ch > 0)
+        {
+            auto* l = buffer.getWritePointer(0);
+            auto* r = ch > 1 ? buffer.getWritePointer(1) : nullptr;
+            for (int n = 0; n < buffer.getNumSamples(); ++n)
+            {
+                float left = l[n], right = r != nullptr ? r[n] : l[n];
+                deEsser.bypassSample(left, right);
+                l[n] = left;
+                if (r != nullptr) r[n] = right;
+            }
+        }
+        gainReductionDb.store(0.0f); detectorLevelDb.store(-100.0f); measureOutput(buffer);
+        return;
+    }
     wasPowered = true;
 
     nfdeesser::Parameters p;
@@ -74,8 +94,8 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
 juce::AudioProcessorValueTreeState::ParameterLayout NFDeEsserAudioProcessor::createParameters()
 {
     using ID=juce::ParameterID;std::vector<std::unique_ptr<juce::RangedAudioParameter>> p;
-    // Frequency 2-12 kHz (centre of the knob = 5 kHz), Threshold -40..0 dB (centre -20), Range 0..20 dB.
-    juce::NormalisableRange<float> freqRange((float) nfdeesser::kMinFreqHz,(float) nfdeesser::kMaxFreqHz,100.0f); freqRange.setSkewForCentre(5000.0f);
+    // Frequency 500 Hz - 16 kHz (centre of the knob = 3 kHz), Threshold -40..0 dB (centre -20), Range 0..20 dB.
+    juce::NormalisableRange<float> freqRange((float) nfdeesser::kMinFreqHz,(float) nfdeesser::kMaxFreqHz,100.0f); freqRange.setSkewForCentre(3000.0f);
     p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"freq",1},"Frequency",freqRange,6500.0f,
         juce::AudioParameterFloatAttributes().withLabel("Hz")));
     p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"threshold",1},"Threshold",juce::NormalisableRange<float>(-40.0f,0.0f,1.0f),-20.0f,

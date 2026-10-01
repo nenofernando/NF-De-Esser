@@ -34,9 +34,18 @@ After a bump, grep for the old version to catch anything missed:
   effective ratio 10:1 (`kSlope` 0.9: the owner wants Threshold to bite like other de-essers), reduction never above Range (default 12 dB) (the amount at the centre frequency).
 - What is turned down (TARGET mode): `y = x + (g-1) * wideBand`, where wideBand is a WIDER 2nd-order band-pass (Q 0.5, `kApplyQ`). With the narrow band
   alone the meter showed 8 dB but the real sibilance only dropped 0.7 dB (the owner reported "no difference when I move Threshold"). Measured now: 8 dB at the
-  centre = about 6 dB on a 4-10 kHz "sss", while 1 kHz stays untouched (tests cover both). FULL mode: `y = x * g`. LISTEN outputs what is being REMOVED, `tanh((1-g) * narrowBand * kListenGain)` with kListenGain 5 (+14 dB; in the owner's Pro Tools screen recording the Listen was 15-20 dB quieter than the normal audio and hard to hear) (owner's request: Listen = only the frequencies being reduced; it follows Threshold and Range and stays silent while nothing is reduced).
+  centre = about 6 dB on a 4-10 kHz "sss", while 1 kHz stays untouched (tests cover both). FULL mode: `y = x * g`. LISTEN is the classic SIDE-CHAIN MONITOR: `tanh(narrowBand * kListenGain)` (x3), ALWAYS audible, independent of Threshold (the owner compared with the Waves and Avid de-essers: sweeping Frequency into the mids/high-mids they keep hearing that region; a Listen that only played what is removed went silent and was wrong).
   Power off = untouched input. No latency, no oversampling.
-- Parameters: `freq` 2-12 kHz (centre 5 kHz), `threshold`, `range`, `listen`, `full` (false = TARGET, only the band; true = FULL, whole signal; the DSP field is still called `wide`), `power`. The processor publishes `gainReductionDb`, `detectorLevelDb` and `outputLevelDb[2]` for the meters.
+- Parameters: `freq` 500 Hz - 16 kHz (centre 3 kHz; the Avid De-Esser III spans the same), `threshold`, `range`, `listen`, `full` (false = TARGET, only the band; true = FULL, whole signal; the DSP field is still called `wide`), `power`. The processor publishes `gainReductionDb`, `detectorLevelDb` and `outputLevelDb[2]` for the meters.
 - No licence system yet (NF Q3 has one); decide before selling.
 
 - UI: NF De-Esser is the one SQUARE plug-in of the family (owner's design): 800 x 800 base layout, default window 540 x 540 (the same 0.675 text scale as the 810 x 270 plug-ins), aspect 1:1, limits 405..1200. Its chassis is `Assets/PNG_READY_800x800/01_chassis_800x800.png`: BLACK BRUSHED STEEL (owner's choice; the other NF plug-ins are green), made from the family chassis texture by mapping its luminance to a dark steel ramp (frame slightly darkened). UI colours that were green-tinted (meter segments, backgrounds) are neutral dark grey. The size chosen with the resize handle is stored in the plug-in state (`uiWidth`) and restored when the window is reopened; a click on the NF logo (single or double) returns to 540 x 540. Preset tab (prev / name / next) at the top right; the 3-line button holds About.
+
+## Calibration and speed (owner compared with Waves and Avid de-essers)
+- Threshold scale is CALIBRATED: the detector reading has `kDetectorGainDb` (+16 dB) added. On a real vocal an "s" read -18..-23 dB raw (so the useful
+  Threshold zone sat at the very bottom of -40..0); now it reads about -5..0 and the vowels about -22..-27, so the working Threshold is -16..-20.
+  Presets are on this scale.
+- LOOK-AHEAD `kLookAheadMs` 1.5 ms: the detector sees the signal before the audio is heard, so the reduction is in place when an "s" starts. The delay is
+  reported as latency (`setLatencySamples`) and Power off uses `bypassSample` with the same delay.
+- Reference: Avid De-Esser III manual (owner supplied pages): Frequency 500 Hz - 16 kHz, Range -40..0 dB, "HF Only" (reduce only above Frequency) vs whole
+  signal, Listen = monitor the sibilant side-chain, gain-reduction meter light orange / dark orange when the Range maximum is reached.

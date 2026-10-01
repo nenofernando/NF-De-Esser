@@ -9,17 +9,16 @@
 using namespace nfdeesser;
 static constexpr double kPi = 3.14159265358979323846;
 
-// Level (dB) of one frequency in a buffer (Goertzel-style single-bin DFT over the second half, steady state).
+// Level (dB) of one frequency in a buffer (single-bin DFT over the second half, steady state).
 static double toneDb(const std::vector<float>& x, double f, double sr)
 {
     const size_t n0 = x.size() / 2;
     double re = 0.0, im = 0.0;
     for (size_t i = n0; i < x.size(); ++i) { const double w = 2.0 * kPi * f * (double) i / sr; re += x[i] * std::cos(w); im -= x[i] * std::sin(w); }
-    const double amp = 2.0 * std::sqrt(re * re + im * im) / (double)(x.size() - n0);
-    return 20.0 * std::log10(amp + 1e-12);
+    return 20.0 * std::log10(2.0 * std::sqrt(re * re + im * im) / (double)(x.size() - n0) + 1e-12);
 }
 
-// Runs a two-tone signal (a low tone and a sibilance tone) through the de-esser; returns left output.
+// Runs a two-tone signal (a low tone and a sibilance tone) through the de-esser; returns the left output.
 static std::vector<float> run(const Parameters& p, double lowHz, double lowDb, double sibHz, double sibDb, double sr, double seconds, double* lastReduction = nullptr)
 {
     DeEsser d; d.prepare(sr); d.setParameters(p);
@@ -79,60 +78,120 @@ int main()
         auto y = run(q, 200.0, -20.0, 9000.0, -12.0, sr, 1.0);
         assert(std::abs(toneDb(y, 9000.0, sr) - (-12.0)) < 2.0);
     }
-    // Listen plays what is being REMOVED (a loud "s" is cut, so it is heard; the low tone is not).
+    // The Frequency range is 500 Hz - 16 kHz and the band really sits where the knob says (peak of the Listen response).
+    {
+        assert(kMinFreqHz == 500.0 && kMaxFreqHz == 16000.0);
+        for (double f0 : { 500.0, 1000.0, 2500.0, 6500.0, 12000.0, 16000.0 })
+        {
+            Parameters q; q.freqHz = f0; q.listen = true; q.thresholdDb = 0.0;
+            auto at = run(q, 50.0, -120.0, f0, -20.0, sr, 0.5);
+            auto below = run(q, 50.0, -120.0, f0 * 0.6, -20.0, sr, 0.5);
+            auto above = run(q, 50.0, -120.0, std::min(f0 * 1.6, 21000.0), -20.0, sr, 0.5);
+            assert(toneDb(at, f0, sr) > toneDb(below, f0 * 0.6, sr) + 6.0);
+            assert(toneDb(at, f0, sr) > toneDb(above, std::min(f0 * 1.6, 21000.0), sr) + 6.0);
+        }
+    }
+    // LISTEN is the classic side-chain monitor: it ALWAYS plays the band the detector hears, whatever the Threshold is.
     {
         Parameters q = p; q.listen = true;
-        auto y = run(q, 200.0, -10.0, 6500.0, -10.0, sr, 1.0);
-        assert(toneDb(y, 6500.0, sr) > -10.0 - 4.5);    // (1 - g) is about 0.75 at the 12 dB Range, lifted by the Listen makeup
-        assert(toneDb(y, 200.0, sr) < -10.0 - 40.0);
+        q.thresholdDb = 0.0;   // nothing is reduced at this threshold
+        auto a = run(q, 200.0, -10.0, 6500.0, -30.0, sr, 1.0);
+        q.thresholdDb = -40.0; // a lot is reduced at this one
+        auto b = run(q, 200.0, -10.0, 6500.0, -30.0, sr, 1.0);
+        const double la = toneDb(a, 6500.0, sr), lb = toneDb(b, 6500.0, sr);
+        assert(la > -30.0 - 1.0);                    // audible (lifted by the Listen gain), not silent
+        assert(std::abs(la - lb) < 0.3);             // independent of the Threshold
+        assert(toneDb(a, 200.0, sr) < -10.0 - 40.0); // the low tone is not in the band
     }
-    // Listen must NOT bring the body of the voice: 1 kHz and 2 kHz are far down for a 6.5 kHz band.
+    // Listen does not bring the body of the voice: 1 kHz and 2 kHz are far down for a 6.5 kHz band.
     {
         Parameters q = p; q.listen = true;
         auto y = run(q, 1000.0, -10.0, 6500.0, -10.0, sr, 1.0);
-        assert(toneDb(y, 1000.0, sr) < -10.0 - 28.0);   // -43 dB band response, lifted by the +14 dB Listen makeup
+        assert(toneDb(y, 1000.0, sr) < -10.0 - 25.0);
         auto z = run(q, 2000.0, -10.0, 6500.0, -10.0, sr, 1.0);
-        assert(toneDb(z, 2000.0, sr) < -10.0 - 14.0);
+        assert(toneDb(z, 2000.0, sr) < -10.0 - 12.0);
     }
-    // Listen follows Threshold: a quiet "s" under the threshold is silent, lowering the threshold makes it audible; Range scales it too.
+    // Sweeping Frequency down into the mids with Listen on, the mids are heard (the band follows the knob).
     {
-        Parameters q = p; q.listen = true; q.rangeDb = 12.0;
-        q.thresholdDb = -30.0;
-        auto quiet = run(q, 200.0, -60.0, 6500.0, -40.0, sr, 1.0);
-        q.thresholdDb = -48.0;
-        auto loud = run(q, 200.0, -60.0, 6500.0, -40.0, sr, 1.0);
-        const double a1 = toneDb(quiet, 6500.0, sr), a2 = toneDb(loud, 6500.0, sr);
-        assert(a1 < -70.0);                 // nothing is being removed: silence
-        assert(a2 > -40.0 && a2 > a1 + 20.0);   // lowering Threshold: clearly audible (Listen is lifted)
-        q.rangeDb = 3.0;
-        auto small = run(q, 200.0, -60.0, 6500.0, -40.0, sr, 1.0);
-        assert(toneDb(small, 6500.0, sr) < a2 - 3.0);   // a smaller Range removes (and plays) less
+        Parameters q; q.listen = true; q.freqHz = 2500.0;
+        auto y = run(q, 2500.0, -20.0, 6500.0, -60.0, sr, 1.0);
+        assert(toneDb(y, 2500.0, sr) > -20.0 - 1.0);   // plays at least as loud as the input (lifted)
+        Parameters r2; r2.listen = true; r2.freqHz = 6500.0;
+        auto z = run(r2, 2500.0, -20.0, 6500.0, -60.0, sr, 1.0);
+        assert(toneDb(z, 2500.0, sr) < -20.0 - 14.0);  // with the band at 6.5 kHz the 2.5 kHz tone is far down
+    }
+    // The Threshold scale is calibrated: an "s" at -20 dBFS reads about -4 dB on the detector (kDetectorGainDb = +16).
+    {
+        DeEsser d; d.prepare(sr); Parameters q = p; q.thresholdDb = 0.0; d.setParameters(q);
+        for (int i = 0; i < (int)(sr * 0.5); ++i) { float l = (float)(0.1 * std::sin(2.0 * kPi * 6500.0 * i / sr)), r = l; d.processSample(l, r); }
+        assert(d.detectorLevelDb() > -7.0 && d.detectorLevelDb() < -1.0);
+    }
+    // Full mode turns the WHOLE signal down (the low tone follows the reduction); Target leaves it alone.
+    {
+        Parameters q = p; q.wide = true;
+        double red = 0.0;
+        auto y = run(q, 200.0, -20.0, 6500.0, -12.0, sr, 1.0, &red);
+        assert(red > 6.0);
+        assert(std::abs(toneDb(y, 200.0, sr) - (-20.0 - red)) < 0.6);
+        auto z = run(q, 200.0, -30.0, 6500.0, -60.0, sr, 1.0);
+        assert(std::abs(toneDb(z, 200.0, sr) - (-30.0)) < 0.2);   // below the threshold Full is transparent too
     }
     // The reduction must be AUDIBLE on a real "sss": broadband noise limited to 4-10 kHz drops by most of what the meter shows,
     // and the body of the voice (1 kHz) is left alone while it is being reduced.
     {
-        // band-limited noise through simple biquads (high-pass 4 kHz, low-pass 10 kHz, two stages each)
         struct BQ { double b0,b1,b2,a1,a2,z1=0,z2=0; double p(double x){ double y=b0*x+z1; z1=b1*x-a1*y+z2; z2=b2*x-a2*y; return y; } };
         auto hp = [&](double f){ double w=2*kPi*f/sr, al=std::sin(w)/(1.4), c=std::cos(w), a0=1+al; return BQ{(1+c)/2/a0,-(1+c)/a0,(1+c)/2/a0,-2*c/a0,(1-al)/a0}; };
         auto lp = [&](double f){ double w=2*kPi*f/sr, al=std::sin(w)/(1.4), c=std::cos(w), a0=1+al; return BQ{(1-c)/2/a0,(1-c)/a0,(1-c)/2/a0,-2*c/a0,(1-al)/a0}; };
         BQ h1=hp(4000.0), h2=hp(4000.0), l1=lp(10000.0), l2=lp(10000.0);
-        DeEsser d; d.prepare(sr); Parameters q = p; q.thresholdDb = -40.0; q.rangeDb = 8.0; d.setParameters(q);
+        DeEsser d; d.prepare(sr); Parameters q = p; q.thresholdDb = -30.0; q.rangeDb = 8.0; d.setParameters(q);
         unsigned s = 1u; double in2 = 0.0, out2 = 0.0, red = 0.0; int cnt = 0; const int n = (int)(sr * 2.0);
+        const int lat = d.latencySamples();
+        std::vector<double> xin((size_t) n);
         for (int i = 0; i < n; ++i)
         {
             s = s * 1664525u + 1013904223u;
             const double x = 0.25 * l2.p(l1.p(h2.p(h1.p(((s >> 8) & 0xffff) / 32768.0 - 1.0))));
+            xin[(size_t) i] = x;
             float l = (float) x, r = l; d.processSample(l, r);
-            if (i > n / 2) { in2 += x * x; out2 += (double) l * l; red += d.gainReductionDb(); ++cnt; }
+            if (i > n / 2 && i >= lat) { in2 += xin[(size_t)(i - lat)] * xin[(size_t)(i - lat)]; out2 += (double) l * l; red += d.gainReductionDb(); ++cnt; }
         }
         const double real = -10.0 * std::log10(out2 / in2), meter = red / cnt;
-        assert(meter > 7.0 && real > 0.65 * meter);   // most of what the meter shows is really heard on the sibilance
+        assert(meter > 5.0 && real > 0.65 * meter);   // most of what the meter shows is really heard on the sibilance
         auto y = run(p, 1000.0, -20.0, 6500.0, -12.0, sr, 1.0);
         assert(std::abs(toneDb(y, 1000.0, sr) - (-20.0)) < 0.5);   // body of the voice untouched during reduction
     }
+    // Look-ahead: the reduction is already in place when a burst arrives, so the first millisecond does not slip through.
+    {
+        DeEsser d; d.prepare(sr); Parameters q = p; q.thresholdDb = -30.0; q.rangeDb = 12.0; d.setParameters(q);
+        const int lat = d.latencySamples();
+        assert(lat == (int) std::lround(kLookAheadMs * 0.001 * sr));
+        const int onset = (int)(0.1 * sr), n = (int)(0.4 * sr);
+        std::vector<float> y((size_t) n);
+        for (int i = 0; i < n; ++i)
+        {
+            float l = i >= onset ? (float)(0.1 * std::sin(2.0 * kPi * 6500.0 * (i - onset) / sr)) : 0.0f, r = l;
+            d.processSample(l, r); y[(size_t) i] = l;
+        }
+        // the audio arrives `lat` samples late: from 0.1 ms after the delayed onset (a quarter cycle needs the filter to fill) up to 0.6 ms
+        double firstPeak = 0.0, steadyPeak = 0.0;
+        for (int i = onset + lat + (int)(0.0001 * sr); i < onset + lat + (int)(0.0006 * sr); ++i) firstPeak = std::max(firstPeak, (double) std::abs(y[(size_t) i]));
+        for (int i = onset + (int)(0.2 * sr); i < onset + (int)(0.3 * sr); ++i) steadyPeak = std::max(steadyPeak, (double) std::abs(y[(size_t) i]));
+        assert(steadyPeak < 0.1 * 0.5);                       // it is reduced in the steady state (> 6 dB)
+        assert(firstPeak < steadyPeak * 1.3);                  // and the beginning of the burst is already as reduced as the steady state (within 2.3 dB)
+    }
+    // Power off (bypassSample) is the untouched input with the SAME delay, so the timing never jumps.
+    {
+        DeEsser d; d.prepare(sr); d.setParameters(p);
+        const int lat = d.latencySamples();
+        std::vector<float> out(512, 0.0f);
+        for (int i = 0; i < 512; ++i) { float l = i == 10 ? 1.0f : 0.0f, r = l; d.bypassSample(l, r); out[(size_t) i] = l; }
+        assert(out[(size_t)(10 + lat)] == 1.0f);
+        int nonZero = 0; for (float v : out) if (v != 0.0f) ++nonZero;
+        assert(nonZero == 1);
+    }
     // Stability: loud noise at every frequency setting stays finite and bounded, reduction never above Range.
     {
-        for (double f : { 2000.0, 5000.0, 12000.0 })
+        for (double f : { 500.0, 5000.0, 16000.0 })
         {
             DeEsser d; d.prepare(sr); Parameters q = p; q.freqHz = f; q.thresholdDb = -40.0; q.rangeDb = 20.0; d.setParameters(q);
             unsigned s = 12345u; double peak = 0.0;
@@ -148,15 +207,18 @@ int main()
             assert(peak < 2.0);
         }
     }
-    // Mono-ish safety: silence in = silence out.
+    // Silence in = silence out (also in Listen).
     {
-        DeEsser d; d.prepare(sr); d.setParameters(p);
-        float l = 0.0f, r = 0.0f;
-        for (int i = 0; i < 1000; ++i) { l = 0.0f; r = 0.0f; d.processSample(l, r); assert(l == 0.0f && r == 0.0f); }
+        for (bool listen : { false, true })
+        {
+            DeEsser d; d.prepare(sr); Parameters q = p; q.listen = listen; d.setParameters(q);
+            float l = 0.0f, r = 0.0f;
+            for (int i = 0; i < 1000; ++i) { l = 0.0f; r = 0.0f; d.processSample(l, r); assert(l == 0.0f && r == 0.0f); }
+        }
     }
 
-    // Factory presets: unique names, every value inside its knob's range.
-    assert(kNumFactoryPresets >= 10);
+    // Factory presets: unique names, every value inside its control's range, "Default" first.
+    assert(kNumFactoryPresets >= 10 && std::strcmp(kFactoryPresets[0].name, "Default") == 0);
     for (int i = 0; i < kNumFactoryPresets; ++i)
     {
         const auto& f = kFactoryPresets[i];

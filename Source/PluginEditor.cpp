@@ -31,7 +31,7 @@ void NFDeEsserPowerButton::paintButton(juce::Graphics& g,bool,bool)
 NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProcessor& p)
     :AudioProcessorEditor(&p),processor(p),grMeter(p.gainReductionDb),
      inputMeter(p.detectorLevelDb,-40.0f,0.0f,24),outLMeter(p.outputLevelDb[0],-30.0f,0.0f,20),outRMeter(p.outputLevelDb[1],-30.0f,0.0f,20),
-     freqCap("2-12 kHz",6500.0,false,formatFreq),thresholdCap("-40 to 0 dB",-20.0,true,formatDb),
+     freqCap("0.5-16 kHz",6500.0,false,formatFreq),thresholdCap("-40 to 0 dB",-20.0,true,formatDb),
      rangeCap("0 to 20 dB",12.0,false,formatRange)
 {
     setLookAndFeel(&look);
@@ -262,7 +262,7 @@ void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("RANGE",     juce::Rectangle<int>((int)kLeftX-70,216,140,22), juce::Justification::centred);
     g.drawText("FREQUENCY", juce::Rectangle<int>((int)kLeftX-70,416,140,22), juce::Justification::centred);
     g.drawText("MONITOR",   juce::Rectangle<int>((int)kLeftX-70,616,140,22), juce::Justification::centred);
-    drawKnobScale(g,{kLeftX,kFreqKnobY},kKnobBox*0.5f+2.0f,"2k","12k");
+    drawKnobScale(g,{kLeftX,kFreqKnobY},kKnobBox*0.5f+2.0f,"500","16k");
     drawKnobScale(g,{kLeftX,kRangeKnobY},kKnobBox*0.5f+2.0f,"0","20");
 
     {   std::vector<FaderTick> t; for(int v=-40; v<=0; v+=5) t.push_back({(double)v, v%10==0 ? juce::String(v) : juce::String(), v%10==0}); drawFaderScale(g,thresholdKnob,kThresholdX,t); }

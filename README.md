@@ -4,12 +4,12 @@ Simple split-band de-esser by **NF Audio Tools** (Nenno Fernando) for vocals, dr
 
 Layout inspired by classic de-esser plug-ins, in the NF look (with a **black brushed-steel** chassis, the owner's choice for this plug-in):
 - **Left column:** **MODE** (**TARGET**: only the sibilance band is turned down, **FULL**: the whole signal is turned down), **RANGE** (0..20 dB: the most it will
-  ever turn down) and **FREQUENCY** (2-12 kHz), both round knobs with a value box, and **MONITOR** (**AUDIO** / **LISTEN**: plays only what the de-esser is taking out, so it follows Threshold and Range: silent while nothing is reduced, louder as you lower Threshold).
+  ever turn down) and **FREQUENCY** (500 Hz - 16 kHz), both round knobs with a value box, and **MONITOR** (**AUDIO** / **LISTEN**: the side-chain monitor, it always plays the band the de-esser hears at Frequency (to find the "s"), whatever the Threshold is).
 - **Threshold** (-40..0 dB) is the only fader, with an input meter beside it (what the detector hears); then the **REDUCTION** meter (gain reduction)
   and L / R output level meters. There is no output gain control.
 - Power and 12 factory presets (male / female / rock / pop / podcast / heavy voice, acoustic guitar, hi-hat, overheads, mix bus, master) plus save/load.
 
-No latency.
+Look-ahead of 1.5 ms (reported to the host as latency, also with Power off) so the reduction is already in place when an "s" starts.
 
 ![preview](Docs/preview.png)
 
