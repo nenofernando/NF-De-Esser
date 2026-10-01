@@ -28,6 +28,7 @@ inline constexpr double kKneeDb = 2.0;          // nearly hard knee
 inline constexpr double kDetectorGainDb = 22.0; // calibration: measured on a real vocal, an "s" read -18..-23 dB raw and the vowels -34..-43 dB
 inline constexpr double kListenGainBand = 3.0, kListenGainHigh = 1.5;   // Listen lift, soft-limited with tanh
 inline constexpr double kLookAheadMs = 1.5;
+inline constexpr double kGateCloseMs = 4.0;
 inline constexpr double kReleaseMinMs = 12.0, kReleaseMaxMs = 24.0, kSustainFullDb = 5.0, kSustainMs = 90.0;   // program-dependent release
 inline constexpr double kGateLoDb = -4.0, kGateHiDb = 4.0;   // ess-ness window: high-vs-body ratio (dB) where the reduction fades in
 inline constexpr double kCrossRatio = 0.5;     // Split crossover = Frequency x this (a crossover only reaches its full reduction well above its corner)
@@ -51,6 +52,7 @@ public:
         sr = sampleRate;
         attackCoef = std::exp(-1.0 / (0.0004 * sr));    // 0.4 ms
         sustainCoef = std::exp(-1.0 / (0.001 * kSustainMs * sr));
+        gateCloseCoef = std::exp(-1.0 / (0.001 * kGateCloseMs * sr));
         releaseCoef = std::exp(-1.0 / (0.018 * sr));    // 18 ms: the next vowel is not left dull
         lookAhead = (int) std::lround(kLookAheadMs * 0.001 * sr);
         for (auto& d : delay) d.assign((size_t) std::max(lookAhead, 1), 0.0);   // read-then-write ring: the delay is exactly its size
@@ -118,7 +120,7 @@ public:
             const double ratioDb = 20.0 * std::log10(env + 1.0e-9) - 20.0 * std::log10(bodyEnv + 1.0e-9);   // highs minus body, raw
             double gate = (ratioDb - kGateLoDb) / (kGateHiDb - kGateLoDb);
             gate = std::min(1.0, std::max(0.0, gate));
-            const double gc = gate > gateSmooth ? attackCoef : releaseCoef;   // fast open, 18 ms close
+            const double gc = gate > gateSmooth ? attackCoef : gateCloseCoef;   // fast open, quick close (a vowel after an "s" must not inherit its tail)
             gateSmooth = gc * gateSmooth + (1.0 - gc) * gate;
             reductionDb *= gateSmooth;
         }
@@ -216,7 +218,7 @@ private:
         filterFreq = params.freqHz;
     }
 
-    double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, bodyEnv = 0.0, gateSmooth = 0.0, sustainDb = 0.0, smoothDb = 0.0, sustainCoef = 0.0, reductionDb = 0.0, filterFreq = -1.0;
+    double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, bodyEnv = 0.0, gateSmooth = 0.0, sustainDb = 0.0, smoothDb = 0.0, sustainCoef = 0.0, gateCloseCoef = 0.0, reductionDb = 0.0, filterFreq = -1.0;
     int lookAhead = 0;
     size_t pos = 0;
     Parameters params;
