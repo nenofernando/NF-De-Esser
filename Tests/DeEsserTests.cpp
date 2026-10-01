@@ -83,16 +83,16 @@ int main()
     {
         Parameters q = p; q.listen = true;
         auto y = run(q, 200.0, -10.0, 6500.0, -10.0, sr, 1.0);
-        assert(toneDb(y, 6500.0, sr) > -10.0 - 4.5);    // (1 - g) is about 0.75 at the 12 dB Range: about -2.5 dB
+        assert(toneDb(y, 6500.0, sr) > -10.0 - 4.5);    // (1 - g) is about 0.75 at the 12 dB Range, lifted by the Listen makeup
         assert(toneDb(y, 200.0, sr) < -10.0 - 40.0);
     }
     // Listen must NOT bring the body of the voice: 1 kHz and 2 kHz are far down for a 6.5 kHz band.
     {
         Parameters q = p; q.listen = true;
         auto y = run(q, 1000.0, -10.0, 6500.0, -10.0, sr, 1.0);
-        assert(toneDb(y, 1000.0, sr) < -10.0 - 35.0);
+        assert(toneDb(y, 1000.0, sr) < -10.0 - 28.0);   // -43 dB band response, lifted by the +14 dB Listen makeup
         auto z = run(q, 2000.0, -10.0, 6500.0, -10.0, sr, 1.0);
-        assert(toneDb(z, 2000.0, sr) < -10.0 - 22.0);
+        assert(toneDb(z, 2000.0, sr) < -10.0 - 14.0);
     }
     // Listen follows Threshold: a quiet "s" under the threshold is silent, lowering the threshold makes it audible; Range scales it too.
     {
@@ -103,7 +103,7 @@ int main()
         auto loud = run(q, 200.0, -60.0, 6500.0, -40.0, sr, 1.0);
         const double a1 = toneDb(quiet, 6500.0, sr), a2 = toneDb(loud, 6500.0, sr);
         assert(a1 < -70.0);                 // nothing is being removed: silence
-        assert(a2 > -52.0 && a2 > a1 + 20.0);   // lowering Threshold: clearly audible
+        assert(a2 > -40.0 && a2 > a1 + 20.0);   // lowering Threshold: clearly audible (Listen is lifted)
         q.rangeDb = 3.0;
         auto small = run(q, 200.0, -60.0, 6500.0, -40.0, sr, 1.0);
         assert(toneDb(small, 6500.0, sr) < a2 - 3.0);   // a smaller Range removes (and plays) less

@@ -10,8 +10,8 @@
 //   red   = soft-knee reduction above Threshold, never more than Range (the amount at the centre frequency)
 //   Split (default): y = x + (g - 1) * wideBand,   g = 10^(-red/20)   -> only the sibilance region is turned down (like a dynamic bell)
 //   Wide:            y = x * g                                         -> the whole signal is turned down (same detector)
-// Listen outputs what is being REMOVED: (1 - g) * band (the narrow detector band), so it follows Threshold and Range: silent while nothing is
-// reduced, louder the more is taken out, and it never brings the body of the voice.
+// Listen outputs what is being REMOVED: (1 - g) * band (the narrow detector band) with a +14 dB lift (soft-limited with tanh), so it follows
+// Threshold and Range: silent while nothing is reduced, louder the more is taken out, and it never brings the body of the voice.
 #include <algorithm>
 #include <cmath>
 
@@ -21,6 +21,7 @@ inline constexpr double kMinFreqHz = 2000.0, kMaxFreqHz = 12000.0;
 inline constexpr double kMaxRangeDb = 20.0;
 inline constexpr double kApplyQ = 0.5;    // Q of the band that is turned down (lower = wider)
 inline constexpr double kSlope = 0.9;     // 1 - 1/ratio: 10:1
+inline constexpr double kListenGain = 5.0; // Listen makeup (+14 dB): what is taken out is quiet by nature, so it is lifted to be clearly audible
 
 struct Parameters
 {
@@ -77,7 +78,12 @@ public:
         reductionDb = std::min(params.rangeDb, kneed * kSlope);
 
         const double g = std::pow(10.0, -reductionDb / 20.0);
-        if (params.listen) { left = (float) ((1.0 - g) * bl); right = (float) ((1.0 - g) * br); return; }   // what is being taken out
+        if (params.listen)   // what is being taken out, lifted by kListenGain and soft-limited so it can never overload
+        {
+            left = (float) std::tanh((1.0 - g) * bl * kListenGain);
+            right = (float) std::tanh((1.0 - g) * br * kListenGain);
+            return;
+        }
 
         if (params.wide) { left = (float) (xl * g); right = (float) (xr * g); return; }
         left = (float) (xl + (g - 1.0) * wl);

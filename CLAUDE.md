@@ -34,7 +34,7 @@ After a bump, grep for the old version to catch anything missed:
   effective ratio 10:1 (`kSlope` 0.9: the owner wants Threshold to bite like other de-essers), reduction never above Range (default 12 dB) (the amount at the centre frequency).
 - What is turned down (TARGET mode): `y = x + (g-1) * wideBand`, where wideBand is a WIDER 2nd-order band-pass (Q 0.5, `kApplyQ`). With the narrow band
   alone the meter showed 8 dB but the real sibilance only dropped 0.7 dB (the owner reported "no difference when I move Threshold"). Measured now: 8 dB at the
-  centre = about 6 dB on a 4-10 kHz "sss", while 1 kHz stays untouched (tests cover both). FULL mode: `y = x * g`. LISTEN outputs what is being REMOVED, `(1-g) * narrowBand` (owner's request: Listen = only the frequencies being reduced; it follows Threshold and Range and stays silent while nothing is reduced).
+  centre = about 6 dB on a 4-10 kHz "sss", while 1 kHz stays untouched (tests cover both). FULL mode: `y = x * g`. LISTEN outputs what is being REMOVED, `tanh((1-g) * narrowBand * kListenGain)` with kListenGain 5 (+14 dB; in the owner's Pro Tools screen recording the Listen was 15-20 dB quieter than the normal audio and hard to hear) (owner's request: Listen = only the frequencies being reduced; it follows Threshold and Range and stays silent while nothing is reduced).
   Power off = untouched input. No latency, no oversampling.
 - Parameters: `freq` 2-12 kHz (centre 5 kHz), `threshold`, `range`, `listen`, `full` (false = TARGET, only the band; true = FULL, whole signal; the DSP field is still called `wide`), `power`. The processor publishes `gainReductionDb`, `detectorLevelDb` and `outputLevelDb[2]` for the meters.
 - No licence system yet (NF Q3 has one); decide before selling.
