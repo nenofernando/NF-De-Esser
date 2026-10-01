@@ -28,6 +28,7 @@ inline constexpr double kKneeDb = 2.0;          // nearly hard knee
 inline constexpr double kDetectorGainDb = 22.0; // calibration: measured on a real vocal, an "s" read -18..-23 dB raw and the vowels -34..-43 dB
 inline constexpr double kListenGainBand = 3.0, kListenGainHigh = 1.5;   // Listen lift, soft-limited with tanh
 inline constexpr double kLookAheadMs = 1.5;
+inline constexpr double kReleaseMinMs = 12.0, kReleaseMaxMs = 24.0, kSustainFullDb = 5.0, kSustainMs = 90.0;   // program-dependent release
 inline constexpr double kGateLoDb = -4.0, kGateHiDb = 4.0;   // ess-ness window: high-vs-body ratio (dB) where the reduction fades in
 inline constexpr double kCrossRatio = 0.5;     // Split crossover = Frequency x this (a crossover only reaches its full reduction well above its corner)
 
@@ -49,6 +50,7 @@ public:
     {
         sr = sampleRate;
         attackCoef = std::exp(-1.0 / (0.0004 * sr));    // 0.4 ms
+        sustainCoef = std::exp(-1.0 / (0.001 * kSustainMs * sr));
         releaseCoef = std::exp(-1.0 / (0.018 * sr));    // 18 ms: the next vowel is not left dull
         lookAhead = (int) std::lround(kLookAheadMs * 0.001 * sr);
         for (auto& d : delay) d.assign((size_t) std::max(lookAhead, 1), 0.0);   // read-then-write ring: the delay is exactly its size
@@ -66,7 +68,7 @@ public:
             lo1[c].clear(); lo2[c].clear(); hi1[c].clear(); hi2[c].clear();
             std::fill(delay[c].begin(), delay[c].end(), 0.0);
         }
-        pos = 0; env = 0.0; bodyEnv = 0.0; gateSmooth = 0.0; reductionDb = 0.0;
+        pos = 0; env = 0.0; bodyEnv = 0.0; gateSmooth = 0.0; sustainDb = 0.0; smoothDb = 0.0; reductionDb = 0.0;
     }
     void setParameters(const Parameters& p)
     {
@@ -120,6 +122,17 @@ public:
             gateSmooth = gc * gateSmooth + (1.0 - gc) * gate;
             reductionDb *= gateSmooth;
         }
+
+        // program-dependent release: a short "s" lets go quickly, a long "sss" lets go slowly (no pumping, no bite)
+        sustainDb = sustainCoef * sustainDb + (1.0 - sustainCoef) * reductionDb;
+        if (reductionDb >= smoothDb) smoothDb = attackCoef * smoothDb + (1.0 - attackCoef) * reductionDb;
+        else
+        {
+            const double relMs = kReleaseMinMs + (kReleaseMaxMs - kReleaseMinMs) * std::min(1.0, sustainDb / kSustainFullDb);
+            const double rc = std::exp(-1.0 / (0.001 * relMs * sr));
+            smoothDb = rc * smoothDb + (1.0 - rc) * reductionDb;
+        }
+        reductionDb = smoothDb;
 
         // ---- audio: the DELAYED signal is turned down, the reduction is ready before the "s" arrives ----
         double dl = xl, dr = xr;
@@ -203,7 +216,7 @@ private:
         filterFreq = params.freqHz;
     }
 
-    double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, bodyEnv = 0.0, gateSmooth = 0.0, reductionDb = 0.0, filterFreq = -1.0;
+    double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, bodyEnv = 0.0, gateSmooth = 0.0, sustainDb = 0.0, smoothDb = 0.0, sustainCoef = 0.0, reductionDb = 0.0, filterFreq = -1.0;
     int lookAhead = 0;
     size_t pos = 0;
     Parameters params;

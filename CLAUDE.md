@@ -58,3 +58,4 @@ After a bump, grep for the old version to catch anything missed:
 - The reduction is faded in only where the side-chain highs stand out from the body of the voice (band-pass 1.5 kHz detector, window -4..+4 dB, fast open / 18 ms close). A bright vowel has body, an "s" does not, so Threshold can sit low without touching vowels.
 - `kDetectorGainDb` 22 (was 16) and `kCrossRatio` 0.5 (was 0.65): TARGET now removes about what the meter shows (default ~ -8 dB on a real "s").
 - Owner feedback: FULL removed more than TARGET, so TARGET's crossover was brought lower to match.
+- Program-dependent release (12 -> 24 ms): short "s" lets go fast, a long "sss" slower (the reduction's own 90 ms average picks the time). Longer values (55 ms) leaked into the next vowel (-0.9 dB), so the cap stays at 24 ms.
