@@ -135,12 +135,12 @@ int main()
         auto z = run(q, 2500.0, -20.0, 9000.0, -60.0, sr, 1.0);
         assert(toneDb(z, 2500.0, sr) < -20.0 - 20.0);
     }
-    // The Threshold scale is calibrated (+16 dB): an "s" at -20 dBFS reads in the upper-middle of the scale on both side-chains.
+    // The Threshold scale is calibrated (+22 dB): an "s" at -20 dBFS reads in the upper-middle of the scale on both side-chains.
     for (bool high : { true, false })
     {
         DeEsser d; d.prepare(sr); Parameters q = p; q.thresholdDb = 0.0; q.highPass = high; q.freqHz = high ? 5000.0 : 6500.0; d.setParameters(q);
         for (int i = 0; i < (int)(sr * 0.5); ++i) { float l = (float)(0.1 * std::sin(2.0 * kPi * 6500.0 * i / sr)), r = l; d.processSample(l, r); }
-        assert(d.detectorLevelDb() > -9.0 && d.detectorLevelDb() < -1.0);
+        assert(d.detectorLevelDb() > -4.0 && d.detectorLevelDb() < 6.0);
     }
     // FULL (wideband) turns the WHOLE signal down (the low tone follows the reduction); TARGET leaves it alone.
     {

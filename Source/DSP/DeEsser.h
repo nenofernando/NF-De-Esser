@@ -25,10 +25,11 @@ inline constexpr double kMinFreqHz = 500.0, kMaxFreqHz = 16000.0;   // same span
 inline constexpr double kMaxRangeDb = 20.0;
 inline constexpr double kSlope = 0.9;           // 1 - 1/ratio: 10:1 (it bites: lowering Threshold squeezes the "s" hard)
 inline constexpr double kKneeDb = 2.0;          // nearly hard knee
-inline constexpr double kDetectorGainDb = 16.0; // calibration: measured on a real vocal, an "s" read -18..-23 dB raw and the vowels -34..-43 dB
+inline constexpr double kDetectorGainDb = 22.0; // calibration: measured on a real vocal, an "s" read -18..-23 dB raw and the vowels -34..-43 dB
 inline constexpr double kListenGainBand = 3.0, kListenGainHigh = 1.5;   // Listen lift, soft-limited with tanh
 inline constexpr double kLookAheadMs = 1.5;
-inline constexpr double kCrossRatio = 0.65;     // Split crossover = Frequency x this (a crossover only reaches its full reduction well above its corner)
+inline constexpr double kGateLoDb = -4.0, kGateHiDb = 4.0;   // ess-ness window: high-vs-body ratio (dB) where the reduction fades in
+inline constexpr double kCrossRatio = 0.5;     // Split crossover = Frequency x this (a crossover only reaches its full reduction well above its corner)
 
 struct Parameters
 {
@@ -38,6 +39,7 @@ struct Parameters
     bool listen = false;      // side-chain monitor
     bool wide = false;        // false = Target (Split: only the highs), true = Full (whole signal)
     bool highPass = true;     // side-chain filter: true = high-pass, false = band-pass
+    bool smart = true;        // only reduce where the highs stand out from the body of the voice (an "s", not a bright vowel)
 };
 
 class DeEsser
@@ -60,11 +62,11 @@ public:
     {
         for (int c = 0; c < 2; ++c)
         {
-            bp[c].clear(); bp2[c].clear(); hd1[c].clear(); hd2[c].clear();
+            bp[c].clear(); bp2[c].clear(); hd1[c].clear(); hd2[c].clear(); bodyF[c].clear();
             lo1[c].clear(); lo2[c].clear(); hi1[c].clear(); hi2[c].clear();
             std::fill(delay[c].begin(), delay[c].end(), 0.0);
         }
-        pos = 0; env = 0.0; reductionDb = 0.0;
+        pos = 0; env = 0.0; bodyEnv = 0.0; gateSmooth = 0.0; reductionDb = 0.0;
     }
     void setParameters(const Parameters& p)
     {
@@ -104,6 +106,20 @@ public:
         if (over >= kKneeDb * 0.5) kneed = over;
         else if (over > -kKneeDb * 0.5) kneed = (over + kKneeDb * 0.5) * (over + kKneeDb * 0.5) / (2.0 * kKneeDb);
         reductionDb = std::min(params.rangeDb, kneed * kSlope);
+
+        // ess-ness: do the highs stand out from the body of the voice? (a bright vowel has body; an "s" has almost none)
+        if (params.smart)
+        {
+            const double bl = bodyF[0].process(xl), br = bodyF[1].process(xr);
+            const double bLevel = std::max(std::abs(bl), std::abs(br));
+            bodyEnv = bLevel > bodyEnv ? attackCoef * bodyEnv + (1.0 - attackCoef) * bLevel : releaseCoef * bodyEnv + (1.0 - releaseCoef) * bLevel;
+            const double ratioDb = 20.0 * std::log10(env + 1.0e-9) - 20.0 * std::log10(bodyEnv + 1.0e-9);   // highs minus body, raw
+            double gate = (ratioDb - kGateLoDb) / (kGateHiDb - kGateLoDb);
+            gate = std::min(1.0, std::max(0.0, gate));
+            const double gc = gate > gateSmooth ? attackCoef : releaseCoef;   // fast open, 18 ms close
+            gateSmooth = gc * gateSmooth + (1.0 - gc) * gate;
+            reductionDb *= gateSmooth;
+        }
 
         // ---- audio: the DELAYED signal is turned down, the reduction is ready before the "s" arrives ----
         double dl = xl, dr = xr;
@@ -180,18 +196,20 @@ private:
         {
             bp[c].setBandpass(w0, 1.8);  bp2[c].setBandpass(w0, 1.8);    // band-pass side-chain: 4th order, about -42 dB at 1 kHz for 6.5 kHz
             hd1[c].setHighpass(w0, Qbw); hd2[c].setHighpass(w0, Qbw);    // high-pass side-chain: 4th order
+            bodyF[c].setBandpass(2.0 * 3.14159265358979323846 * 1500.0 / sr, 0.5);   // the body of the voice (about 600 Hz - 3.5 kHz)
             lo1[c].setLowpass(wx, Qbw);  lo2[c].setLowpass(wx, Qbw);     // crossover, low part
             hi1[c].setHighpass(wx, Qbw); hi2[c].setHighpass(wx, Qbw);    // crossover, high part
         }
         filterFreq = params.freqHz;
     }
 
-    double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, reductionDb = 0.0, filterFreq = -1.0;
+    double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, bodyEnv = 0.0, gateSmooth = 0.0, reductionDb = 0.0, filterFreq = -1.0;
     int lookAhead = 0;
     size_t pos = 0;
     Parameters params;
     Biquad bp[2], bp2[2], hd1[2], hd2[2];   // side-chain filters
     Biquad lo1[2], lo2[2], hi1[2], hi2[2];  // audio crossover
+    Biquad bodyF[2];                        // body-of-the-voice detector
     std::vector<double> delay[2];
 };
 }

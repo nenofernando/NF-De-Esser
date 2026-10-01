@@ -53,3 +53,8 @@ After a bump, grep for the old version to catch anything missed:
   reported as latency (`setLatencySamples`) and Power off uses `bypassSample` with the same delay.
 - Reference: Avid De-Esser III manual (owner supplied pages): Frequency 500 Hz - 16 kHz, Range -40..0 dB, "HF Only" (reduce only above Frequency) vs whole
   signal, Listen = monitor the sibilant side-chain, gain-reduction meter light orange / dark orange when the Range maximum is reached.
+
+## Sibilance gate + stronger TARGET (v1.0.0 tuning)
+- The reduction is faded in only where the side-chain highs stand out from the body of the voice (band-pass 1.5 kHz detector, window -4..+4 dB, fast open / 18 ms close). A bright vowel has body, an "s" does not, so Threshold can sit low without touching vowels.
+- `kDetectorGainDb` 22 (was 16) and `kCrossRatio` 0.5 (was 0.65): TARGET now removes about what the meter shows (default ~ -8 dB on a real "s").
+- Owner feedback: FULL removed more than TARGET, so TARGET's crossover was brought lower to match.
