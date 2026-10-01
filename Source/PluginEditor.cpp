@@ -44,14 +44,11 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     }
 
     addAndMakeVisible(logoButton);
-    logoButton.setTooltip("Click: reset UI size");
     logoButton.onDoubleClick = [this]{ setSize(kDefaultSize,kDefaultSize); };
 
     addAndMakeVisible(menuButton);
-    menuButton.setTooltip("About");
     menuButton.onClick = [this]{ showMainMenu(); };
     addAndMakeVisible(presetBar);
-    presetBar.setTooltip("Preset: click the name for the list, arrows = previous / next");
     presetBar.onPrev = [this]{ stepPreset(-1); };
     presetBar.onNext = [this]{ stepPreset(+1); };
     presetBar.onMenu = [this]{ showPresetMenu(); };
@@ -79,8 +76,6 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     addAndMakeVisible(power);power.setClickingTogglesState(true);
     for(auto* b:{&modeBtn,&listenBtn}) { addAndMakeVisible(*b); b->setClickingTogglesState(true); }
     addAndMakeVisible(audioBtn);
-    audioBtn.setTooltip("Monitor the normal audio");
-    listenBtn.setTooltip("Listen: plays only what the de-esser is taking out (follows Threshold and Range)");
     audioBtn.onClick = [this]{ if (auto* q = processor.apvts.getParameter("listen")) { q->beginChangeGesture(); q->setValueNotifyingHost(0.0f); q->endChangeGesture(); } };
     addAndMakeVisible(thresholdBubble);
     addAndMakeVisible(grMeter);
