@@ -43,6 +43,7 @@ void NFDeEsserAudioProcessor::measureOutput(const juce::AudioBuffer<float>& buff
 void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals guard;
+    struct LicenseMuteGuard { NFLicenseManager& lm; juce::AudioBuffer<float>& b; ~LicenseMuteGuard(){ if(!lm.isActivated()) b.clear(); } } licenseGuard{licenseManager, buffer};
 
     // Power off = the untouched input (no latency, so nothing to compensate).
     const bool powered = powerParam->load() > 0.5f;

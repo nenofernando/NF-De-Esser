@@ -1,10 +1,12 @@
 #pragma once
 #include <JuceHeader.h>
 #include "DSP/DeEsser.h"
+#include "License/NFLicenseManager.h"
 
 class NFDeEsserAudioProcessor final : public juce::AudioProcessor
 {
 public:
+    NFLicenseManager licenseManager { "NF_DE_ESSER" };
     NFDeEsserAudioProcessor();
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
