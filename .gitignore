@@ -1,0 +1,10 @@
+/build*/
+JUCE/
+.DS_Store
+*.dmg
+*.exe
+*.pkg
+*.vst3
+*.component
+*.aaxplugin
+Installer/Windows/payload/
