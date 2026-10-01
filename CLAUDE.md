@@ -6,7 +6,7 @@ look-and-feel and artwork are its own copies (`Source/UI/NFDeEsserLookAndFeel.*`
 ## Mandatory: version consistency
 Whenever the version changes it MUST be right everywhere. **Single source of truth: `CMakeLists.txt` line 2**
 (`project(NFDeEsser VERSION X.Y.Z ...)`). Everything else derives from it automatically:
-- plugin UI footer "V1.0.0" (bottom-left) reads `JucePlugin_VersionString`;
+- plugin UI footer "V1.0.1" (bottom-left) reads `JucePlugin_VersionString`;
 - `Installer/macos/build_dmg.sh` and `Installer/Windows/build_windows_installer.ps1` read it from `CMakeLists.txt`
   (the Windows script passes it to Inno Setup as `/DMyAppVersion`; `NFDeEsser.iss` refuses to build without it).
 After a bump, grep for the old version to catch anything missed:
