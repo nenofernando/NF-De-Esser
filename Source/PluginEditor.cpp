@@ -79,7 +79,6 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     addAndMakeVisible(power);power.setClickingTogglesState(true);
     for(auto* b:{&modeBtn,&listenBtn}) { addAndMakeVisible(*b); b->setClickingTogglesState(true); }
     addAndMakeVisible(audioBtn);
-    modeBtn.setTooltip("TARGET: only the sibilance band is turned down. FULL: the whole signal is turned down (same detector)");
     audioBtn.setTooltip("Monitor the normal audio");
     listenBtn.setTooltip("Monitor the band the de-esser hears (side-chain), to find the sibilance");
     audioBtn.onClick = [this]{ if (auto* q = processor.apvts.getParameter("listen")) { q->beginChangeGesture(); q->setValueNotifyingHost(0.0f); q->endChangeGesture(); } };
