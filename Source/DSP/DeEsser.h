@@ -1,8 +1,8 @@
 #pragma once
 // NF De-Esser DSP. JUCE-free so the unit tests can run it anywhere.
 //
-// Split-band de-esser: a band-pass around the chosen frequency is both the detector and the part that gets turned down,
-// so everything outside the sibilance band passes through untouched.
+// Split-band de-esser: a narrow 4th-order band-pass (two cascaded 2nd-order stages) around the chosen frequency is both the detector and
+// the part that gets turned down, so everything outside the sibilance band (voice body, low mids) passes through untouched.
 //   band  = bandpass(x, freq)                      (unity gain at the centre)
 //   level = envelope of max(|bandL|, |bandR|)      (stereo linked)
 //   red   = soft-knee reduction above Threshold, never more than Range
@@ -40,6 +40,7 @@ public:
     void reset()
     {
         for (auto& f : bp) f.z1 = f.z2 = 0.0;
+        for (auto& f : bp2) f.z1 = f.z2 = 0.0;
         env = 0.0; reductionDb = 0.0;
     }
     void setParameters(const Parameters& p)
@@ -53,7 +54,7 @@ public:
     void processSample(float& left, float& right)
     {
         const double xl = left, xr = right;
-        const double bl = bp[0].process(xl), br = bp[1].process(xr);
+        const double bl = bp2[0].process(bp[0].process(xl)), br = bp2[1].process(bp[1].process(xr));
 
         // detector: peak envelope of the band, stereo linked
         const double level = std::max(std::abs(bl), std::abs(br));
@@ -95,12 +96,13 @@ private:
 
     void updateFilter()
     {
-        // RBJ band-pass, constant 0 dB peak gain
-        constexpr double Q = 1.4;
+        // RBJ band-pass, constant 0 dB peak gain; two identical stages = 4th order (24 dB/oct skirts, about -42 dB at 1 kHz for a 6.5 kHz band)
+        constexpr double Q = 1.8;
         const double w0 = 2.0 * 3.14159265358979323846 * params.freqHz / sr;
         const double alpha = std::sin(w0) / (2.0 * Q), cw = std::cos(w0), a0 = 1.0 + alpha;
-        for (auto& f : bp)
+        for (auto* stage : { &bp[0], &bp[1], &bp2[0], &bp2[1] })
         {
+            auto& f = *stage;
             f.b0 = alpha / a0; f.b1 = 0.0; f.b2 = -alpha / a0;
             f.a1 = -2.0 * cw / a0; f.a2 = (1.0 - alpha) / a0;
         }
@@ -109,6 +111,6 @@ private:
 
     double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, reductionDb = 0.0, filterFreq = -1.0;
     Parameters params;
-    Biquad bp[2];
+    Biquad bp[2], bp2[2];   // two cascaded stages per channel
 };
 }

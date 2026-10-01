@@ -86,6 +86,14 @@ int main()
         assert(toneDb(y, 6500.0, sr) > -11.0);
         assert(toneDb(y, 200.0, sr) < -40.0);
     }
+    // Listen must NOT bring the body of the voice: 1 kHz and 2 kHz are far down for a 6.5 kHz band (4th-order band-pass).
+    {
+        Parameters q = p; q.listen = true;
+        auto y = run(q, 1000.0, -10.0, 6500.0, -10.0, sr, 1.0);
+        assert(toneDb(y, 1000.0, sr) < -10.0 - 35.0);
+        auto z = run(q, 2000.0, -10.0, 6500.0, -10.0, sr, 1.0);
+        assert(toneDb(z, 2000.0, sr) < -10.0 - 22.0);
+    }
     // Wide mode turns the WHOLE signal down (the low tone follows the reduction), Split leaves it alone.
     {
         Parameters q = p; q.wide = true;
