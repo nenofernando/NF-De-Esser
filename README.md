@@ -2,7 +2,7 @@
 
 Simple split-band de-esser by **NF Audio Tools** (Nenno Fernando) for vocals, drums and mixes. VST3, AU (macOS) and AAX (Pro Tools).
 
-Layout inspired by classic de-esser plug-ins, in the NF green look:
+Layout inspired by classic de-esser plug-ins, in the NF look (with a **black brushed-steel** chassis, the owner's choice for this plug-in):
 - **Left column:** **AUDIO** mode (**SPLIT**: only the sibilance band is turned down, **WIDE**: the whole signal is turned down), **FREQUENCY** (2-12 kHz,
   round knob with a value box) and **MONITOR** (**AUDIO** / **LISTEN**: Listen plays only the band the de-esser hears, to find the "s").
 - **Range** (0..20 dB: the most it will ever turn down) is a round knob in the left column, like Frequency.

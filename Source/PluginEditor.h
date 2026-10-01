@@ -17,7 +17,7 @@ public:
         const float barX = 14.0f*s, barW = 26.0f*s, top = 16.0f*s, bottom = (float)getHeight() - 4.0f*s;
         g.setColour(juce::Colour(0x50000000));
         g.fillRoundedRectangle(barX-3.0f*s, top-3.0f*s+2.0f*s, barW+6.0f*s, bottom-top+6.0f*s, 5.0f*s);
-        g.setColour(juce::Colour(0xff0d130f));
+        g.setColour(juce::Colour(0xff0c0d0f));
         g.fillRoundedRectangle(barX-3.0f*s, top-3.0f*s, barW+6.0f*s, bottom-top+6.0f*s, 5.0f*s);
         const float segH = (bottom-top) / (float)numSeg;
         for (int i=0;i<numSeg;++i)
@@ -25,7 +25,7 @@ public:
             const bool lit = shown > ((float)i + 0.05f) * (maxDb/(float)numSeg);
             const bool hot = i >= 6;
             juce::Rectangle<float> seg(barX, top + (float)i*segH + 1.2f*s, barW, segH - 2.4f*s);
-            g.setColour(lit ? (hot ? juce::Colour(0xffe8863a) : juce::Colour(0xffffdd7a)) : juce::Colour(0xff222c25));
+            g.setColour(lit ? (hot ? juce::Colour(0xffe8863a) : juce::Colour(0xffffdd7a)) : juce::Colour(0xff25282b));
             g.fillRoundedRectangle(seg, 1.5f*s);
             if (lit){ g.setColour(juce::Colours::white.withAlpha(0.35f)); g.fillRoundedRectangle(seg.reduced(1.5f*s).removeFromTop(seg.getHeight()*0.35f), 1.0f*s); }
         }
@@ -64,7 +64,7 @@ public:
         g.setGradientFill(on ? juce::ColourGradient(juce::Colour(0xffffe9a0), 0.0f, r.getY(), juce::Colour(0xffe8b84a), 0.0f, r.getBottom(), false)
                              : juce::ColourGradient(juce::Colour(over ? 0xfffaf8ef : 0xfff2f0e7), 0.0f, r.getY(), juce::Colour(0xffd9d6c9), 0.0f, r.getBottom(), false));
         g.fillRoundedRectangle(r, 7.0f*s);
-        g.setColour(juce::Colour(0xff111511));
+        g.setColour(juce::Colour(0xff111213));
         g.drawRoundedRectangle(r, 7.0f*s, 1.6f*s);
         g.setColour(juce::Colour(0xff101510));
         g.setFont(juce::Font(juce::FontOptions(13.5f*s,juce::Font::bold)));
@@ -86,7 +86,7 @@ public:
         auto b = getLocalBounds().toFloat();
         g.setColour(juce::Colour(0x50000000));
         g.fillRoundedRectangle(b.translated(0.0f,2.0f*s), 5.0f*s);
-        g.setColour(juce::Colour(0xff0d130f));
+        g.setColour(juce::Colour(0xff0c0d0f));
         g.fillRoundedRectangle(b, 5.0f*s);
         const auto inner = b.reduced(3.0f*s);
         const float segH = inner.getHeight() / (float)numSeg;
@@ -96,7 +96,7 @@ public:
             const bool lit = shown > lowDb + 0.05f;
             const bool hot = i >= numSeg - juce::jmax(2, numSeg/5);
             juce::Rectangle<float> seg(inner.getX(), inner.getBottom() - (float)(i+1)*segH + 1.0f*s, inner.getWidth(), segH - 2.0f*s);
-            g.setColour(lit ? (hot ? juce::Colour(0xffe8863a) : juce::Colour(0xffffdd7a)) : juce::Colour(0xff222c25));
+            g.setColour(lit ? (hot ? juce::Colour(0xffe8863a) : juce::Colour(0xffffdd7a)) : juce::Colour(0xff25282b));
             g.fillRoundedRectangle(seg, 1.4f*s);
             if (lit){ g.setColour(juce::Colours::white.withAlpha(0.3f)); g.fillRoundedRectangle(seg.reduced(1.2f*s).removeFromTop(seg.getHeight()*0.35f), 1.0f*s); }
         }
@@ -162,7 +162,7 @@ public:
         g.fillRoundedRectangle(r.translated(0.0f,2.0f*s), 8.0f*s);
         g.setGradientFill(juce::ColourGradient(juce::Colour(0xfff6f4ec), 0.0f, r.getY(), juce::Colour(0xffdcd9cc), 0.0f, r.getBottom(), false));
         g.fillRoundedRectangle(r, 8.0f*s);
-        g.setColour(juce::Colour(0xff111511));
+        g.setColour(juce::Colour(0xff111213));
         g.drawRoundedRectangle(r, 8.0f*s, 1.6f*s);
         // arrows
         g.setColour(juce::Colour(0xff101510));
@@ -210,7 +210,7 @@ public:
     void paint(juce::Graphics& g) override
     {
         auto b = getLocalBounds().toFloat().reduced(1.0f);
-        g.setColour(juce::Colour(0xff0a140d).withAlpha(0.85f));
+        g.setColour(juce::Colour(0xff0a0b0c).withAlpha(0.85f));
         g.fillRoundedRectangle(b, 6.0f);
         g.setColour(juce::Colour(0xffd9d4c4).withAlpha(0.6f));
         g.drawRoundedRectangle(b, 6.0f, 1.0f);

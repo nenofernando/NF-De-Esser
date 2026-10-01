@@ -76,9 +76,9 @@ void NFDeEsserLookAndFeel::drawLinearSlider(juce::Graphics& g,int x,int y,int wi
     // Groove: matte black, rounded, with a soft shadow.
     g.setColour(juce::Colour(0x55000000));
     g.fillRoundedRectangle(centreX-4.5f*s, trackTop+2.0f*s, 9.0f*s, trackBottom-trackTop, 4.5f*s);
-    g.setColour(juce::Colour(0xff0d110e));
+    g.setColour(juce::Colour(0xff0c0d0f));
     g.fillRoundedRectangle(centreX-3.5f*s, trackTop, 7.0f*s, trackBottom-trackTop, 3.5f*s);
-    g.setColour(juce::Colour(0xff2a302b));
+    g.setColour(juce::Colour(0xff2c2f31));
     g.drawRoundedRectangle(centreX-3.5f*s, trackTop, 7.0f*s, trackBottom-trackTop, 3.5f*s, 0.8f*s);
 
     // Thumb: silver ribbed fader cap (like the classic console / DAW faders): upper half silver, lower half brighter, a black line at the
@@ -176,5 +176,5 @@ juce::Label* NFDeEsserLookAndFeel::createSliderTextBox(juce::Slider& s)
 
 void NFDeEsserLookAndFeel::drawButtonBackground(juce::Graphics& g,juce::Button& b,const juce::Colour&,bool over,bool down)
 {
-    auto r=b.getLocalBounds().toFloat().reduced(1);g.setColour(juce::Colour(down?0xffb9b8b1:(over?0xfffaf8ef:0xffe8e6dd)));g.fillRoundedRectangle(r,4);g.setColour(juce::Colour(0xff111511));g.drawRoundedRectangle(r,4,1.2f);
+    auto r=b.getLocalBounds().toFloat().reduced(1);g.setColour(juce::Colour(down?0xffb9b8b1:(over?0xfffaf8ef:0xffe8e6dd)));g.fillRoundedRectangle(r,4);g.setColour(juce::Colour(0xff111213));g.drawRoundedRectangle(r,4,1.2f);
 }

@@ -239,7 +239,7 @@ void NFDeEsserAudioProcessorEditor::drawFaderScale(juce::Graphics& g,juce::Slide
 
 void NFDeEsserAudioProcessorEditor::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colour(0xff0a1b11));
+    g.fillAll(juce::Colour(0xff0b0c0e));
     juce::Graphics::ScopedSaveState state(g);
     g.addTransform(juce::AffineTransform::scale(layoutScale).translated(offsetX, offsetY));
 
