@@ -63,15 +63,32 @@ public:
     }
     // Delay (samples) between the input and the audio: report it to the host as latency.
     int latencySamples() const { return lookAhead; }
-    void reset()
+    // Clears the filters and the envelopes (the "processing state") but NOT the look-ahead ring, so the audio that is already
+    // waiting in the delay is never thrown away. Used when Power comes back on.
+    void resetProcessing()
     {
         for (int c = 0; c < 2; ++c)
         {
             bp[c].clear(); bp2[c].clear(); hd1[c].clear(); hd2[c].clear(); bodyF[c].clear();
             lo1[c].clear(); lo2[c].clear(); hi1[c].clear(); hi2[c].clear();
-            std::fill(delay[c].begin(), delay[c].end(), 0.0);
         }
-        pos = 0; env = 0.0; bodyEnv = 0.0; gateSmooth = 0.0; sustainDb = 0.0; smoothDb = 0.0; reductionDb = 0.0;
+        env = 0.0; bodyEnv = 0.0; gateSmooth = 0.0; sustainDb = 0.0; smoothDb = 0.0; reductionDb = 0.0;
+    }
+    // Full reset: processing state AND the look-ahead ring (prepare / transport restart).
+    void reset()
+    {
+        resetProcessing();
+        for (int c = 0; c < 2; ++c) std::fill(delay[c].begin(), delay[c].end(), 0.0);
+        pos = 0; poweredPrev = true;
+    }
+    // One sample with the Power switch applied. Power off = the untouched input through the SAME delay (so the timing never
+    // jumps and not one pending sample is lost); Power back on = fresh filters/envelopes, but the delay keeps its audio.
+    void process(float& left, float& right, bool powered)
+    {
+        if (!powered) { poweredPrev = false; bypassSample(left, right); return; }
+        if (!poweredPrev) resetProcessing();
+        poweredPrev = true;
+        processSample(left, right);
     }
     void setParameters(const Parameters& p)
     {
@@ -229,6 +246,7 @@ private:
 
     double sr = 48000.0, attackCoef = 0.0, releaseCoef = 0.0, env = 0.0, bodyEnv = 0.0, gateSmooth = 0.0, sustainDb = 0.0, smoothDb = 0.0, sustainCoef = 0.0, gateCloseCoef = 0.0, reductionDb = 0.0, filterFreq = -1.0, freqCur = 6500.0, glideCoef = 0.1;
     unsigned glideCount = 0;
+    bool poweredPrev = true;
     int lookAhead = 0;
     size_t pos = 0;
     Parameters params;

@@ -34,7 +34,36 @@ public:
 
     /** true só se existe um certificado local, a assinatura bate, o
         produto bate, e a máquina bate com o fingerprint atual. */
-    bool isActivated() const { return activated; }
+    bool isActivated() const { return activated.load (std::memory_order_acquire); }
+
+    /** Relê e reverifica o certificado local (message thread). O resultado vira visível pra thread de áudio numa única
+        escrita atômica no fim - nunca passa por um "desativado" intermediário. */
+    void reloadLocalCertificate() { loadAndVerifyLocalCertificate(); }
+
+    /** true se o certificado (JSON) é do produto e da máquina esperados. Separado da assinatura (que é verificada à parte)
+        pra poder ser testado sozinho. */
+    static bool validateCertificateFields (const juce::String& certificate, const juce::String& product, const juce::String& machineId)
+    {
+        auto certVar = juce::JSON::parse (certificate);
+        return certVar.getProperty ("product_code", "").toString() == product
+            && certVar.getProperty ("machine_id", "").toString() == machineId;
+    }
+
+    /** Grava o certificado em `file`. Devolve false se não deu pra criar a pasta, escrever ou reler o arquivo - quem chama
+        NÃO pode dizer "ativado" nesse caso. */
+    static bool saveCertificateTo (const juce::File& file, const juce::String& certificate, const juce::String& signature)
+    {
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty ("certificate", certificate);
+        obj->setProperty ("signature", signature);
+
+        auto dir = file.getParentDirectory();
+        if (! dir.exists() && ! dir.createDirectory().wasOk())
+            return false;
+        if (! file.replaceWithText (juce::JSON::toString (juce::var (obj), true)))
+            return false;
+        return file.existsAsFile();
+    }
 
     /** Dispara a ativação em background (não trava GUI/audio thread).
         `onResult` é chamado na message thread quando terminar. */
@@ -54,14 +83,22 @@ public:
 
             juce::MessageManager::callAsync ([alive, this, result, onResult]
             {
-                if (*alive)
+                bool ok = result.success;
+                juce::String error = result.errorMessage;
+
+                if (*alive && ok)
                 {
-                    if (result.success)
-                        loadAndVerifyLocalCertificate();
+                    loadAndVerifyLocalCertificate();
+                    // Só diz "ativado" se a licença realmente ficou valendo neste computador.
+                    if (! isActivated())
+                    {
+                        ok = false;
+                        error = "A licenca foi recebida, mas nao pode ser confirmada neste computador.";
+                    }
                 }
 
                 if (onResult)
-                    onResult (result.success, result.errorMessage);
+                    onResult (ok, error);
             });
         });
         worker.detach();
@@ -123,50 +160,38 @@ private:
         if (! NFLicenseVerify::verify (certificate, signature))
             return { false, "Certificado recebido nao pode ser verificado." };
 
-        saveCertificateLocally (product, certificate, signature);
+        if (! validateCertificateFields (certificate, product, fingerprint.machineId))
+            return { false, "O certificado recebido nao corresponde a este produto ou a este computador." };
+
+        if (! saveCertificateTo (getCertificateFile (product), certificate, signature))
+            return { false, "Nao foi possivel gravar a licenca neste computador." };
+
         return { true, {} };
     }
 
     void loadAndVerifyLocalCertificate()
     {
-        activated = false;
+        // Tudo é calculado numa variável local e publicado de uma vez: a thread de áudio nunca vê um "desativado" no meio.
+        activated.store (checkLocalCertificate (productCode), std::memory_order_release);
+    }
 
-        auto file = getCertificateFile (productCode);
+    static bool checkLocalCertificate (const juce::String& product)
+    {
+        auto file = getCertificateFile (product);
         if (! file.existsAsFile())
-            return;
+            return false;
 
         auto stored = juce::JSON::parse (file);
         auto certificate = stored.getProperty ("certificate", "").toString();
         auto signature = stored.getProperty ("signature", "").toString();
 
         if (certificate.isEmpty() || signature.isEmpty())
-            return;
+            return false;
 
         if (! NFLicenseVerify::verify (certificate, signature))
-            return;
+            return false;
 
-        auto certVar = juce::JSON::parse (certificate);
-        auto certProduct = certVar.getProperty ("product_code", "").toString();
-        auto certMachineId = certVar.getProperty ("machine_id", "").toString();
-
-        if (certProduct != productCode)
-            return;
-
-        if (certMachineId != MachineFingerprint::get().machineId)
-            return;
-
-        activated = true;
-    }
-
-    static void saveCertificateLocally (const juce::String& productCode, const juce::String& certificate, const juce::String& signature)
-    {
-        auto* obj = new juce::DynamicObject();
-        obj->setProperty ("certificate", certificate);
-        obj->setProperty ("signature", signature);
-
-        auto file = getCertificateFile (productCode);
-        file.getParentDirectory().createDirectory();
-        file.replaceWithText (juce::JSON::toString (juce::var (obj), true));
+        return validateCertificateFields (certificate, product, MachineFingerprint::get().machineId);
     }
 
     static juce::File getCertificateFile (const juce::String& productCode)
@@ -179,5 +204,5 @@ private:
 
     std::shared_ptr<std::atomic<bool>> aliveFlag = std::make_shared<std::atomic<bool>> (true);
     juce::String productCode;
-    bool activated = false;
+    std::atomic<bool> activated { false };   // escrito pela thread da interface, lido pela thread de áudio
 };

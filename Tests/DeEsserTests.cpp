@@ -1,6 +1,7 @@
 #undef NDEBUG   // the checks must run in Release builds too
 #include "../Source/DSP/DeEsser.h"
 #include "../Source/FactoryPresets.h"
+#include "../Source/Defaults.h"
 #include <cassert>
 #include <cstring>
 #include <iostream>
@@ -257,6 +258,56 @@ int main()
         double worstDev = 0; for (size_t i = 2; i + 2 < pk.size(); ++i) { const double nb = 0.5 * (pk[i - 2] + pk[i + 2]); worstDev = std::max(worstDev, std::abs(pk[i] - nb) / nb); }
         assert(worstDev < 0.02);
     }
+    // ---- Power switch (regression: switching Power off used to clear the look-ahead ring and throw away ~1.5 ms of audio) ----
+    {
+        // ON -> OFF: not one pending sample may be lost: the bypassed output is exactly the input delayed by the latency.
+        DeEsser d; d.prepare(sr); d.setParameters(p);
+        const int lat = d.latencySamples();
+        assert(lat > 0);
+        const int on = 4000, off = lat * 4;
+        std::vector<float> in((size_t)(on + off)), out((size_t)(on + off));
+        unsigned seed = 12345u;
+        for (auto& v : in) { seed = seed * 1664525u + 1013904223u; v = 0.5f * (float)(((seed >> 8) & 0xffff) / 32768.0 - 1.0); }
+        for (int i = 0; i < on + off; ++i)
+        {
+            float l = in[(size_t) i], r = l;
+            d.process(l, r, i < on);   // Power on for the first block, off afterwards
+            out[(size_t) i] = l;
+        }
+        for (int k = 0; k < off; ++k)
+            assert(out[(size_t)(on + k)] == in[(size_t)(on + k - lat)]);   // includes k < lat: the audio that was waiting in the delay
+    }
+    {
+        // OFF -> ON: the audio waiting in the delay is kept, the filters/envelopes start fresh, and nothing blows up.
+        DeEsser d; d.prepare(sr); d.setParameters(p);
+        const int lat = d.latencySamples(), off = 3000, on = (int)(sr * 0.05);
+        std::vector<float> out((size_t) on);
+        double inE = 0.0, outE = 0.0;
+        for (int i = 0; i < off + on; ++i)
+        {
+            const float x = (float)(0.1 * std::sin(2.0 * kPi * 1000.0 * i / sr));
+            float l = x, r = x;
+            d.process(l, r, i >= off);
+            assert(std::isfinite(l) && std::abs(l) < 1.0f);
+            if (i >= off) { out[(size_t)(i - off)] = l; if (i - off < (int)(sr * 0.005)) { const double w = 0.1 * std::sin(2.0 * kPi * 1000.0 * (i - lat) / sr); inE += w * w; outE += (double) l * l; } }
+        }
+        assert(outE > 0.5 * inE && outE < 1.5 * inE);   // no hole of silence right after Power comes back
+    }
+    {
+        // Power on is the SAME processing as before: bit-identical to calling processSample directly (calibration untouched).
+        DeEsser a, b; a.prepare(sr); b.prepare(sr); a.setParameters(p); b.setParameters(p);
+        for (int i = 0; i < (int)(sr * 0.5); ++i)
+        {
+            const float x = (float)(0.2 * std::sin(2.0 * kPi * 220.0 * i / sr) + 0.15 * std::sin(2.0 * kPi * 7500.0 * i / sr));
+            float l1 = x, r1 = x, l2 = x, r2 = x;
+            a.process(l1, r1, true); b.processSample(l2, r2);
+            assert(l1 == l2 && r1 == r2);
+        }
+    }
+    // ---- Starting values: the plug-in's defaults and the "Default" preset are the same thing (also checked at compile time) ----
+    assert(kDefaultFreqHz == 5500.0f && kDefaultThresholdDb == -20.0f && kDefaultRangeDb == 12.0f);
+    assert(kFactoryPresets[0].freqHz == kDefaultFreqHz && kFactoryPresets[0].thresholdDb == kDefaultThresholdDb
+           && kFactoryPresets[0].rangeDb == kDefaultRangeDb && kFactoryPresets[0].highPass == kDefaultHighPass);
     // Factory presets: unique names, every value inside its control's range, "Default" first.
     assert(kNumFactoryPresets >= 10 && std::strcmp(kFactoryPresets[0].name, "Default") == 0);
     for (int i = 0; i < kNumFactoryPresets; ++i)

@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Defaults.h"
 
 NFDeEsserAudioProcessor::NFDeEsserAudioProcessor()
     : AudioProcessor(BusesProperties().withInput("Input",juce::AudioChannelSet::stereo(),true)
@@ -20,7 +21,6 @@ void NFDeEsserAudioProcessor::prepareToPlay(double sr,int)
 {
     deEsser.prepare(sr);
     setLatencySamples(deEsser.latencySamples());   // look-ahead: reported to the host
-    wasPowered = true;
 }
 
 bool NFDeEsserAudioProcessor::isBusesLayoutSupported(const BusesLayout& l) const
@@ -47,10 +47,8 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
 
     // Power off = the untouched input (no latency, so nothing to compensate).
     const bool powered = powerParam->load() > 0.5f;
-    if (!powered)   // Power off: the untouched input, with the same delay so the timing never jumps
+    if (!powered)   // Power off: the untouched input, with the same delay so the timing never jumps (the delay is NOT cleared)
     {
-        if (wasPowered) deEsser.reset();
-        wasPowered = false;
         const int ch = std::min(2, buffer.getNumChannels());
         if (ch > 0)
         {
@@ -59,7 +57,7 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
             for (int n = 0; n < buffer.getNumSamples(); ++n)
             {
                 float left = l[n], right = r != nullptr ? r[n] : l[n];
-                deEsser.bypassSample(left, right);
+                deEsser.process(left, right, false);
                 l[n] = left;
                 if (r != nullptr) r[n] = right;
             }
@@ -67,7 +65,6 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
         gainReductionDb.store(0.0f); detectorLevelDb.store(-100.0f); measureOutput(buffer);
         return;
     }
-    wasPowered = true;
 
     nfdeesser::Parameters p;
     p.freqHz = freqParam->load();
@@ -87,7 +84,7 @@ void NFDeEsserAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce
     for (int n = 0; n < buffer.getNumSamples(); ++n)
     {
         float left = l[n], right = r != nullptr ? r[n] : l[n];
-        deEsser.processSample(left, right);
+        deEsser.process(left, right, true);
         l[n] = left;
         if (r != nullptr) r[n] = right;
     }
@@ -101,16 +98,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout NFDeEsserAudioProcessor::cre
     using ID=juce::ParameterID;std::vector<std::unique_ptr<juce::RangedAudioParameter>> p;
     // Frequency 500 Hz - 16 kHz (centre of the knob = 3 kHz), Threshold -40..0 dB (centre -20), Range 0..20 dB.
     juce::NormalisableRange<float> freqRange((float) nfdeesser::kMinFreqHz,(float) nfdeesser::kMaxFreqHz,100.0f); freqRange.setSkewForCentre(3000.0f);
-    p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"freq",1},"Frequency",freqRange,6500.0f,
+    p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"freq",1},"Frequency",freqRange,nfdeesser::kDefaultFreqHz,
         juce::AudioParameterFloatAttributes().withLabel("Hz")));
-    p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"threshold",1},"Threshold",juce::NormalisableRange<float>(-40.0f,0.0f,1.0f),-20.0f,
+    p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"threshold",1},"Threshold",juce::NormalisableRange<float>(-40.0f,0.0f,1.0f),nfdeesser::kDefaultThresholdDb,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
-    p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"range",1},"Range",juce::NormalisableRange<float>(0.0f,(float) nfdeesser::kMaxRangeDb,0.5f),12.0f,
+    p.push_back(std::make_unique<juce::AudioParameterFloat>(ID{"range",1},"Range",juce::NormalisableRange<float>(0.0f,(float) nfdeesser::kMaxRangeDb,0.5f),nfdeesser::kDefaultRangeDb,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"listen",1},"Listen",false));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"full",1},"Full band",false));
-    p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"sidechainHigh",1},"Side-chain high-pass",true));
-    p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"voice",1},"Source voice",true));
+    p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"sidechainHigh",1},"Side-chain high-pass",nfdeesser::kDefaultHighPass));
+    p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"voice",1},"Source voice",nfdeesser::kDefaultVoice));
     p.push_back(std::make_unique<juce::AudioParameterBool>(ID{"power",1},"Power",true));
     return {p.begin(),p.end()};
 }

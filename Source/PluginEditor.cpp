@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "NFDeEsserBinaryData.h"
 #include "FactoryPresets.h"
+#include "Defaults.h"
 #include "ManualManager.h"
 #ifndef JucePlugin_VersionString
  #define JucePlugin_VersionString "0.0.0-test"
@@ -32,8 +33,8 @@ void NFDeEsserPowerButton::paintButton(juce::Graphics& g,bool,bool)
 NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProcessor& p)
     :AudioProcessorEditor(&p),processor(p),grMeter(p.gainReductionDb),
      inputMeter(p.detectorLevelDb,-40.0f,0.0f,24),outLMeter(p.outputLevelDb[0],-30.0f,0.0f,20),outRMeter(p.outputLevelDb[1],-30.0f,0.0f,20),
-     freqCap("0.5-16 kHz",6500.0,false,formatFreq),thresholdCap("-40 to 0 dB",-20.0,true,formatDb),
-     rangeCap("0 to 20 dB",12.0,false,formatRange),licenseOverlay(p.licenseManager)
+     freqCap("0.5-16 kHz",nfdeesser::kDefaultFreqHz,false,formatFreq),thresholdCap("-40 to 0 dB",nfdeesser::kDefaultThresholdDb,true,formatDb),
+     rangeCap("0 to 20 dB",nfdeesser::kDefaultRangeDb,false,formatRange),licenseOverlay(p.licenseManager)
 {
     setLookAndFeel(&look);
     setResizable(true,true);
@@ -57,7 +58,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
     processor.apvts.state.addListener(this);
 
     struct K{ juce::Slider* s; double def; };
-    for(auto k:{K{&thresholdKnob,-20.0}}){
+    for(auto k:{K{&thresholdKnob,(double) nfdeesser::kDefaultThresholdDb}}){
         addAndMakeVisible(*k.s);
         k.s->setComponentID("fader");
         k.s->setSliderStyle(juce::Slider::LinearVertical);
@@ -66,7 +67,7 @@ NFDeEsserAudioProcessorEditor::NFDeEsserAudioProcessorEditor(NFDeEsserAudioProce
         k.s->setScrollWheelEnabled(true);
         k.s->setDoubleClickReturnValue(true,k.def);
     }
-    for(auto k:{K{&freqKnob,6500.0},K{&rangeKnob,12.0}}){
+    for(auto k:{K{&freqKnob,(double) nfdeesser::kDefaultFreqHz},K{&rangeKnob,(double) nfdeesser::kDefaultRangeDb}}){
         addAndMakeVisible(*k.s);
         k.s->setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         k.s->setRotaryParameters(juce::MathConstants<float>::pi*1.25f, juce::MathConstants<float>::pi*2.75f, true);   // 270-degree sweep, same as the family
