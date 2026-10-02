@@ -77,9 +77,10 @@ endif()
 enable_testing()
 add_test(NAME NFDeEsserDspTests COMMAND NFDeEsserDspTests)
 
-# Licence regression tests (need the JUCE core/events/cryptography modules). Not part of "all": build them on request:
-#   cmake --build <dir> --target NFDeEsserLicenseTests   (run it also with -fsanitize=thread to check the activated flag)
-add_executable(NFDeEsserLicenseTests EXCLUDE_FROM_ALL Tests/LicenseTests.cpp)
+# Licence regression tests (need the JUCE core/events/cryptography modules). They are part of "all", so a plain build followed by
+# `ctest` always finds both test executables (the installer scripts build with --target, so they are not slowed down).
+# Run it also with -fsanitize=thread to check the activated flag.
+add_executable(NFDeEsserLicenseTests Tests/LicenseTests.cpp)
 target_compile_definitions(NFDeEsserLicenseTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_STANDALONE_APPLICATION=1)
 target_link_libraries(NFDeEsserLicenseTests PRIVATE juce::juce_core juce::juce_events juce::juce_cryptography juce::juce_recommended_config_flags)
 add_test(NAME NFDeEsserLicenseTests COMMAND NFDeEsserLicenseTests)
