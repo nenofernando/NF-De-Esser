@@ -6,7 +6,7 @@ look-and-feel and artwork are its own copies (`Source/UI/NFDeEsserLookAndFeel.*`
 ## Mandatory: version consistency
 Whenever the version changes it MUST be right everywhere. **Single source of truth: `CMakeLists.txt` line 2**
 (`project(NFDeEsser VERSION X.Y.Z ...)`). Everything else derives from it automatically:
-- plugin UI footer "V1.0.1" (bottom-left) reads `JucePlugin_VersionString`;
+- plugin UI footer "V1.0.2" (bottom-left) reads `JucePlugin_VersionString`;
 - `Installer/macos/build_dmg.sh` and `Installer/Windows/build_windows_installer.ps1` read it from `CMakeLists.txt`
   (the Windows script passes it to Inno Setup as `/DMyAppVersion`; `NFDeEsser.iss` refuses to build without it).
 After a bump, grep for the old version to catch anything missed:
@@ -62,3 +62,10 @@ After a bump, grep for the old version to catch anything missed:
 - Sibilance gate closes in 4 ms (was 18 ms): on a second, hotter voice the tail of a real "s" bled into the following vowel.
 - SOURCE button (VOICE / INSTR, param `voice`, default VOICE) sits beside BAND/HIGH under SIDE-CHAIN. VOICE keeps the sibilance gate; INSTR switches it off (plain level detector). Needed because a pick-guitar always has more body than highs, so the gate never opened (no reduction at all). Factory presets 0-7 (voices) set VOICE, the rest INSTR. Measured on a pick acoustic guitar, INSTR with the Acoustic Guitar preset: 64 of 928 frames touched, highs down to -5 dB, 1-3 kHz at most -0.5 dB.
 - Frequency glides (~12 ms, coefficients refreshed every 16 samples) instead of jumping: turning the knob in Listen made a "tch" click (steady tone, cutoff stepping through it: peak jumps 6 % HIGH / 23 % BAND, now < 1 %). Covered by a test.
+
+## Audit of 2026-10-02 (v1.0.2)
+- Licence flag: `NFLicenseManager::activated` is a `std::atomic<bool>`, published with ONE store at the end of the check. Activation is only reported as a success if the certificate matches this product and machine, the file was really written, and the licence is valid after reloading. Tests: `Tests/LicenseTests.cpp` (target `NFDeEsserLicenseTests`, not in "all"; run it under `-fsanitize=thread` too). This header is shared by the whole NF line: the same fixes belong in the other plug-ins (to do with Paulo).
+- Power: `DeEsser::process(l, r, powered)`. Off = untouched input through the SAME delay (the ring is never cleared: it used to lose ~72 samples at 48 kHz); back on = `resetProcessing()` (filters/envelopes only). Bit-identical to `processSample` when on, so the sound calibration is unchanged. Tests: ON->OFF exact continuity, OFF->ON, bit-identity.
+- Starting values live in `Source/Defaults.h` (5.5 kHz / -20 dB / 12 dB / HIGH / VOICE) and are checked against the "Default" factory preset with `static_assert`.
+- Manuals regenerated for 1.0.2 (footer, screenshots at the Default values, menu with the two manuals + About).
+- NOT done on purpose: RSA-PSS for the licence signature (the certificate is currently RSA over the raw SHA-256). It must be planned with Paulo because the licence server signs it too (`nfSign.ts` in nf-license-system) and every NF plug-in verifies it.
